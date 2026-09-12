@@ -9,7 +9,7 @@ const PORT = Number(process.env.PORT) || 10000;
 const ROOT = __dirname;
 const PUBLIC = path.join(ROOT, 'public');
 const DOWNLOADS = path.join(ROOT, 'downloads');
-const YTDLP = path.join(ROOT, 'bin', 'yt-dlp');
+const YTDLP = process.env.YTDLP_PATH || path.join(ROOT, 'bin', 'yt-dlp');
 const FFPROBE = '/usr/bin/ffprobe';
 
 fs.mkdirSync(DOWNLOADS, { recursive: true });

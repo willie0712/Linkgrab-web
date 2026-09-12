@@ -1,8 +1,8 @@
 services:
   - type: web
     name: linkgrab
-    runtime: docker
+    runtime: node
     plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    buildCommand: npm install
+    startCommand: bash start.sh
     healthCheckPath: /api/hello
