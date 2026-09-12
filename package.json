@@ -1,0 +1,9 @@
+{
+  "name": "linkgrab-render",
+  "version": "1.0.2",
+  "private": true,
+  "description": "LinkGrab modern web downloader for Render",
+  "main": "server.js",
+  "scripts": {"start": "node server.js"},
+  "dependencies": {"express": "^5.1.0"}
+}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkGrab</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar"><div class="brand"><span class="logo">LG</span><div><strong>LinkGrab</strong><small>Video & Audio Downloader</small></div></div><span class="version">1.0.2</span></header>
+    <section class="hero"><p class="eyebrow">DOWNLOAD ANYWHERE</p><h1>貼上網址，<span>開始下載。</span></h1><p class="sub">快速分析影片資訊，選擇 MP4 或 MP3，直接下載。</p>
+      <div class="inputrow"><input id="url" placeholder="https://..." autocomplete="off"/><button id="analyze">分析網址</button></div>
+      <div id="status" class="status"></div>
+    </section>
+    <section id="card" class="card hidden"><div class="media"><img id="thumb" alt=""/><div class="meta"><span id="platform" class="pill">—</span><h2 id="title">—</h2><p id="uploader">—</p><p id="duration">—</p></div></div>
+      <div class="controls"><label>格式<select id="format"><option value="mp4">MP4 — 影片 + 音訊</option><option value="mp3">MP3 — 僅音訊</option></select></label><button id="download" class="primary">下載檔案</button></div>
+    </section>
+    <footer>LinkGrab 1.0.2 · Web Edition</footer>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
