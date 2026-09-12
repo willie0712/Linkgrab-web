@@ -1,0 +1,11 @@
+node_modules/
+downloads/*
+!downloads/.gitkeep
+bin/*
+!bin/.gitkeep
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+npm-debug.log*

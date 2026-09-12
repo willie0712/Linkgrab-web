@@ -1,11 +1,8 @@
 services:
   - type: web
     name: linkgrab
-    runtime: node
+    runtime: docker
     plan: free
-    buildCommand: apt-get update && apt-get install -y ffmpeg && npm install && mkdir -p bin && curl -L --fail -o bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp && chmod +x bin/yt-dlp
-    startCommand: node server.js
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /api/hello
-    envVars:
-      - key: NODE_VERSION
-        value: "22"
