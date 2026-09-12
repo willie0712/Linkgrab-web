@@ -64,7 +64,33 @@ function findOutput(dir, ext) {
   return found;
 }
 
-app.get('/api/hello', (req, res) => res.json({ status: 'ok', app: 'LinkGrab', version: '1.0.2' }));
+app.get('/api/hello', (req, res) => res.json({ status: 'ok', app: 'LinkGrab', version: '1.0.2', ytDlp: fs.existsSync(YTDLP), ffmpeg: fs.existsSync('/usr/bin/ffmpeg'), ffprobe: fs.existsSync(FFPROBE) }));
+
+app.get('/api/health', (req, res) => res.json({ ok: true, ytDlp: fs.existsSync(YTDLP), ffmpeg: fs.existsSync('/usr/bin/ffmpeg'), ffprobe: fs.existsSync(FFPROBE) }));
+
+app.post('/api/search', async (req, res) => {
+  const query = String(req.body?.query || '').trim();
+  const platform = String(req.body?.platform || 'YouTube').toLowerCase();
+  const limit = Math.min(Math.max(Number(req.body?.limit) || 10, 1), 10);
+  if (!query) return res.status(400).json({ error: '請輸入搜尋關鍵字' });
+  if (!fs.existsSync(YTDLP)) return res.status(500).json({ error: '伺服器尚未準備 yt-dlp' });
+  const prefix = platform.includes('sound') ? 'scsearch' : 'ytsearch';
+  try {
+    const { stdout } = await run(YTDLP, ['--flat-playlist', '-J', '--no-warnings', `${prefix}${limit}:${query}`], 90 * 1000);
+    const data = JSON.parse(stdout);
+    const results = (data.entries || []).filter(Boolean).map(item => ({
+      id: item.id || '',
+      url: item.webpage_url || item.url || (prefix === 'ytsearch' && item.id ? `https://www.youtube.com/watch?v=${item.id}` : ''),
+      title: item.title || '未命名',
+      thumbnail: item.thumbnail || '',
+      uploader: item.uploader || item.channel || '',
+      duration: item.duration || 0
+    }));
+    res.json({ results });
+  } catch (e) {
+    res.status(500).json({ error: `搜尋失敗：${e.message}` });
+  }
+});
 
 app.post('/api/info', async (req, res) => {
   const url = String(req.body?.url || '').trim();
