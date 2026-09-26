@@ -1,57 +1,1265 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>LinkGrab Web v1.0.2</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}:root{--bg:#090b12;--bg2:#0f121b;--panel:rgba(20,24,35,.82);--solid:#141823;--hover:#1b2030;--text:#f5f7fb;--sub:#9299aa;--muted:#656c7d;--border:rgba(255,255,255,.08);--borderh:rgba(255,255,255,.15);--accent:#7c5cff;--accent2:#9a7cff;--soft:rgba(124,92,255,.14);--success:#27d49a;--danger:#ff5c72;--shadow:0 24px 70px rgba(0,0,0,.35)}
-body.light{--bg:#f3f5f9;--bg2:#e9ecf2;--panel:rgba(255,255,255,.88);--solid:#fff;--hover:#f4f5f8;--text:#171a24;--sub:#646b7b;--muted:#8a91a0;--border:rgba(20,25,40,.09);--borderh:rgba(20,25,40,.16);--accent:#6847e8;--accent2:#805fff;--soft:rgba(104,71,232,.1);--shadow:0 24px 70px rgba(40,45,70,.14)}
-html,body{width:100%;height:100%;overflow:hidden}body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans TC",sans-serif;background:radial-gradient(circle at 15% 10%,rgba(124,92,255,.14),transparent 30%),radial-gradient(circle at 85% 90%,rgba(39,212,154,.08),transparent 30%),var(--bg);color:var(--text);transition:.25s}button,input,select{font:inherit}button{border:0}.app{width:100%;height:100vh;display:flex;overflow:hidden}.sidebar{width:250px;height:100%;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);backdrop-filter:blur(24px);display:flex;flex-direction:column;padding:24px 16px}.brand{display:flex;align-items:center;gap:12px;padding:4px 10px 28px}.brand-icon{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 25px rgba(124,92,255,.28);font-size:21px}.brand-text h1{font-size:19px;line-height:1.1;letter-spacing:-.4px}.brand-text span{display:block;margin-top:4px;color:var(--muted);font-size:11px}.nav-title{padding:0 10px 9px;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase}.nav{display:flex;flex-direction:column;gap:5px}.nav-item{width:100%;display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;background:transparent;color:var(--sub);cursor:pointer;text-align:left;transition:.2s}.nav-item:hover{background:var(--hover);color:var(--text)}.nav-item.active{background:var(--soft);color:var(--accent2)}.nav-icon{width:24px;text-align:center;font-size:16px}.sidebar-bottom{margin-top:auto}.status-card{padding:13px;border-radius:13px;background:var(--hover);border:1px solid var(--border)}.status-top{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}.status-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 10px rgba(39,212,154,.7)}.status-desc{margin-top:6px;color:var(--muted);font-size:10px;line-height:1.5}.main{min-width:0;flex:1;height:100%;display:flex;flex-direction:column;overflow:hidden}.topbar{height:72px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 30px;border-bottom:1px solid var(--border)}.page-heading h2{font-size:18px;font-weight:700;letter-spacing:-.3px}.page-heading p{margin-top:3px;color:var(--muted);font-size:11px}.top-actions{display:flex;align-items:center;gap:8px}.icon-button{width:37px;height:37px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--panel);border:1px solid var(--border);color:var(--sub);cursor:pointer;transition:.2s}.icon-button:hover{border-color:var(--borderh);background:var(--hover);color:var(--text)}.content{flex:1;min-height:0;padding:24px 30px;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px}.workspace{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:18px}.hero{min-height:185px;padding:24px;border-radius:18px;background:linear-gradient(135deg,rgba(124,92,255,.18),rgba(124,92,255,.03)),var(--panel);border:1px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:260px;height:260px;right:-100px;top:-120px;border-radius:50%;background:rgba(124,92,255,.12);filter:blur(3px)}.hero-content{position:relative;z-index:2}.hero-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:var(--soft);color:var(--accent2);font-size:10px;font-weight:700}.hero h1{margin-top:12px;font-size:28px;line-height:1.2;letter-spacing:-1px}.hero h1 span{background:linear-gradient(135deg,var(--accent2),#c1b4ff);-webkit-background-clip:text;background-clip:text;color:transparent}.hero p{margin-top:8px;color:var(--sub);font-size:12px}.platforms{position:absolute;right:24px;bottom:20px;display:flex;gap:7px;z-index:2}.platform{width:31px;height:31px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:rgba(255,255,255,.055);border:1px solid var(--border);font-size:14px}.download-panel,.history-panel{min-height:0;padding:20px;border-radius:18px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden}.download-panel{display:flex;flex-direction:column}.panel-header,.history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.panel-title{font-size:14px;font-weight:700}.panel-subtitle{margin-top:3px;color:var(--muted);font-size:10px}.url-box,.search-row{display:flex;gap:8px}.input{min-width:0;flex:1;height:43px;padding:0 14px;border-radius:11px;background:var(--bg2);border:1px solid var(--border);color:var(--text);outline:none;font-size:12px;transition:.2s}.input:focus{border-color:rgba(124,92,255,.55);box-shadow:0 0 0 3px rgba(124,92,255,.08)}.btn{height:43px;padding:0 17px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font-size:12px;font-weight:600;transition:.2s}.btn-secondary{background:var(--bg2);border:1px solid var(--border);color:var(--sub)}.btn-secondary:hover{color:var(--text);background:var(--hover)}.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 8px 20px rgba(124,92,255,.22)}.btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 25px rgba(124,92,255,.3)}.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}.search-row{margin-top:10px}.search-row .input{height:36px}.select{height:36px;padding:0 10px;border-radius:9px;background:var(--bg2);border:1px solid var(--border);color:var(--text);outline:none;font-size:11px}.search-button{height:36px;padding:0 13px}.search-results{max-height:145px;margin-top:8px;overflow:hidden auto;border-radius:10px;background:var(--bg2);border:1px solid var(--border)}.search-result{min-height:45px;padding:8px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s}.search-result:hover{background:var(--hover)}.result-thumb{width:54px;height:32px;flex-shrink:0;object-fit:cover;border-radius:5px;background:var(--hover)}.result-info{min-width:0;flex:1}.result-title,.history-name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.result-title{color:var(--text);font-size:11px;font-weight:600}.result-meta{margin-top:3px;color:var(--muted);font-size:9px}.result-use,.history-download{flex-shrink:0;padding:5px 9px;border-radius:7px;background:var(--soft);color:var(--accent2);font-size:9px;font-weight:600;cursor:pointer}.video-info,.options,.filename{display:none}.video-info{margin-top:13px;padding:12px;border-radius:12px;background:var(--bg2);border:1px solid var(--border)}.video-card{display:flex;align-items:center;gap:12px}.thumbnail{width:150px;height:84px;flex-shrink:0;object-fit:cover;border-radius:9px;background:var(--hover)}.video-details{min-width:0;flex:1}.video-title{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13px;font-weight:700;line-height:1.4}.video-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:9px}.options{margin-top:13px;grid-template-columns:1fr 1fr;gap:10px}.option-group{padding:11px;border-radius:11px;background:var(--bg2);border:1px solid var(--border)}.option-label{margin-bottom:8px;color:var(--muted);font-size:9px;font-weight:700}.option-buttons{display:flex;gap:7px}.option{flex:1;min-height:34px;border-radius:8px;background:var(--panel);border:1px solid var(--border);color:var(--sub);cursor:pointer;font-size:10px;font-weight:600;transition:.15s}.option:hover{border-color:var(--borderh);color:var(--text)}.option.selected{background:var(--soft);border-color:rgba(124,92,255,.45);color:var(--accent2)}.filename{margin-top:9px}.filename .input{height:34px}.download-area{margin-top:auto;padding-top:13px}.download-btn{width:100%;height:45px;border-radius:11px;background:linear-gradient(135deg,var(--success),#1dbb89);color:#06130f;cursor:pointer;font-size:12px;font-weight:800;box-shadow:0 10px 25px rgba(39,212,154,.18);transition:.2s}.download-btn:hover{transform:translateY(-1px);box-shadow:0 13px 30px rgba(39,212,154,.25)}.download-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}.right-column{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:18px}.history-panel{display:flex;flex-direction:column}.history-header h3{font-size:13px}.clear-btn{color:var(--danger);background:transparent;cursor:pointer;font-size:9px}.history-list{height:calc(100% - 32px);overflow:hidden auto}.history-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);text-align:center}.history-empty-icon{font-size:30px;opacity:.4;margin-bottom:8px}.history-empty-text{font-size:10px}.history-item{padding:10px 0;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--border)}.history-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:8px;background:var(--soft);font-size:13px}.history-info{min-width:0;flex:1}.history-name{color:var(--text);font-size:10px;font-weight:600}.history-time{margin-top:3px;color:var(--muted);font-size:8px}.quick-panel{padding:15px;border-radius:16px;background:linear-gradient(135deg,rgba(39,212,154,.08),rgba(124,92,255,.08));border:1px solid var(--border)}.quick-title{font-size:11px;font-weight:700}.quick-text{margin-top:5px;color:var(--muted);font-size:9px;line-height:1.5}.quick-features{display:flex;gap:6px;margin-top:9px}.quick-feature{padding:5px 7px;border-radius:6px;background:var(--panel);color:var(--sub);font-size:8px}.loading-overlay,.modal{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;background:rgba(4,6,10,.55);backdrop-filter:blur(8px)}.loading-box,.modal-card{width:390px;padding:24px;border-radius:18px;background:var(--solid);border:1px solid var(--border);box-shadow:var(--shadow);text-align:center}.spinner{width:38px;height:38px;margin:0 auto 14px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.loading-title{font-size:12px;font-weight:700}.loading-desc{margin-top:5px;color:var(--muted);font-size:9px}.modal.show{display:flex}.modal-card{text-align:left}.modal-icon{width:45px;height:45px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:var(--soft);font-size:21px}.modal h3{margin-top:15px;font-size:18px}.modal p{margin-top:7px;color:var(--sub);font-size:11px;line-height:1.6}.email-box{margin-top:15px;padding:12px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);color:var(--accent2);font-size:12px;font-weight:600;word-break:break-all}.modal-actions{display:flex;gap:8px;margin-top:16px}.modal-actions .btn{flex:1}.toast{position:fixed;left:50%;bottom:24px;z-index:600;transform:translate(-50%,15px);padding:10px 15px;border-radius:9px;background:var(--solid);border:1px solid var(--border);box-shadow:var(--shadow);color:var(--text);font-size:10px;opacity:0;pointer-events:none;transition:.25s}.toast.show{opacity:1;transform:translate(-50%,0)}.error{display:none;margin-top:9px;padding:9px 11px;border-radius:9px;background:rgba(255,92,114,.1);border:1px solid rgba(255,92,114,.2);color:#ff8c9b;font-size:9px}
-@media(max-width:1100px){.sidebar{width:210px}.content{grid-template-columns:minmax(0,1fr) 280px;padding:18px}.topbar{padding:0 18px}.platforms{display:none}}@media(max-height:760px){.topbar{height:62px}.content{padding:16px 22px;gap:15px}.hero{min-height:155px;padding:20px}.hero h1{font-size:24px}.download-panel{padding:16px}.video-info,.options{margin-top:9px}}
-</style></head>
-<body><div class="app">
-<aside class="sidebar"><div class="brand"><div class="brand-icon">🔗</div><div class="brand-text"><h1>LinkGrab</h1><span>Web v1.0.2</span></div></div><div class="nav-title">WORKSPACE</div><nav class="nav"><button class="nav-item active" id="navHome"><span class="nav-icon">⌂</span><span>首頁</span></button><button class="nav-item" id="navHistory"><span class="nav-icon">◷</span><span>下載記錄</span></button><button class="nav-item" id="navContact"><span class="nav-icon">✉</span><span>聯絡我們</span></button><button class="nav-item" id="navFAQ"><span class="nav-icon">?</span><span>常見問題</span></button></nav><div class="sidebar-bottom"><div class="status-card"><div class="status-top"><span class="status-dot"></span><span>Web 服務運作中</span></div><div class="status-desc">LinkGrab Web 使用伺服器處理下載，可直接在瀏覽器使用。</div></div></div></aside>
-<main class="main"><header class="topbar"><div class="page-heading"><h2>下載工作台</h2><p>快速分析、選擇格式並下載媒體</p></div><div class="top-actions"><button class="icon-button" id="langButton" title="Language">🌐</button><button class="icon-button" id="themeButton" title="Theme">◐</button></div></header>
-<section class="content"><div class="workspace"><section class="hero"><div class="hero-content"><div class="hero-badge"><span>●</span><span>LINKGRAB WEB v1.0.2</span></div><h1><span>你的媒體下載工作台</span></h1><p>貼上連結，分析內容，選擇格式後即可下載。</p></div><div class="platforms"><div class="platform">▶</div><div class="platform">♪</div><div class="platform">◎</div><div class="platform">♪</div><div class="platform">▶</div><div class="platform">●</div></div></section>
-<section class="download-panel"><div class="panel-header"><div><div class="panel-title">媒體來源</div><div class="panel-subtitle">貼上網址或使用搜尋功能</div></div></div><div class="url-box"><input id="urlInput" class="input" type="text" placeholder="貼上影片或音樂連結..."><button id="pasteBtn" class="btn btn-secondary">📋 <span>貼上</span></button><button id="analyzeBtn" class="btn btn-primary">✦ <span>分析</span></button></div>
-<div class="search-row"><input id="searchInput" class="input" type="text" placeholder="搜尋影片或音樂..."><select id="searchPlatform" class="select"><option value="youtube">YouTube</option><option value="soundcloud">SoundCloud</option></select><button id="searchBtn" class="btn btn-secondary search-button">🔍 <span>搜尋</span></button></div><div id="searchResults" class="search-results" style="display:none"></div>
-<div id="videoInfo" class="video-info"><div class="video-card"><img id="videoThumbnail" class="thumbnail" src="" alt=""><div class="video-details"><div id="videoTitleLarge" class="video-title"></div><div class="video-meta"><span>👤 <span id="videoUploader">-</span></span><span>◷ <span id="videoDuration">-</span></span><span>🌐 <span id="videoPlatform">-</span></span></div></div></div></div>
-<div id="options" class="options"><div class="option-group"><div class="option-label">格式</div><div class="option-buttons"><button class="option selected" data-format="mp4">🎬 MP4</button><button class="option" data-format="mp3">🎵 MP3</button></div></div><div class="option-group" id="qualityGroup"><div class="option-label">畫質</div><div class="option-buttons"><button class="option selected" data-quality="high">1080p</button><button class="option" data-quality="medium">720p</button><button class="option" data-quality="low">480p</button></div></div></div>
-<div id="filenameSection" class="filename"><input id="filenameInput" class="input" type="text" placeholder="自訂檔案名稱（可留空）"></div><div id="errorMsg" class="error"></div><div class="download-area"><button id="downloadBtn" class="download-btn" disabled>↓ <span>開始下載</span></button></div></section></div>
-<div class="right-column"><section class="history-panel" id="historyPanel"><div class="history-header"><h3>下載記錄</h3><button id="clearHistory" class="clear-btn">清空</button></div><div id="historyList" class="history-list"></div></section><section class="quick-panel"><div class="quick-title">LinkGrab Web</div><div class="quick-text">保留 PC 版工作台體驗，改由雲端伺服器處理下載。</div><div class="quick-features"><span class="quick-feature">雲端處理</span><span class="quick-feature">無廣告</span><span class="quick-feature">免費</span></div></section></div></section></main></div>
-<div id="loadingOverlay" class="loading-overlay"><div class="loading-box"><div class="spinner"></div><div id="loadingTitle" class="loading-title">正在處理</div><div id="loadingDesc" class="loading-desc">請稍候...</div></div></div>
-<div id="contactModal" class="modal"><div class="modal-card"><div class="modal-icon">✉</div><h3>聯絡我們</h3><p>如果你有問題、建議或發現 Bug，可以透過以下 Email 聯絡。</p><div class="email-box">willie.develop467@gmail.com</div><div class="modal-actions"><button id="copyEmail" class="btn btn-primary">📋 複製</button><button id="closeContact" class="btn btn-secondary">關閉</button></div></div></div><div id="toast" class="toast"></div>
-<script>
-const API_URL=window.location.origin;
-async function readApiResponse(r){
-  const text=await r.text();
-  let data;
-  try{data=JSON.parse(text)}catch{throw new Error(r.status===404?'API 路由不存在，請確認 Render 已部署最新版本':`伺服器回傳非 JSON（HTTP ${r.status}）`)}
-  if(!r.ok) throw new Error(data.error||`請求失敗（HTTP ${r.status}）`);
-  return data;
-}
-async function checkServer(){
-  try{
-    const r=await fetch(API_URL+'/api/hello',{cache:'no-store'});
-    const d=await readApiResponse(r);
-    const el=document.querySelector('[data-server-status]');
-    if(el) el.textContent=d.ytDlp?'Web 服務運作中':'Web 服務運作中｜yt-dlp 尚未準備';
-  }catch(e){
-    const el=document.querySelector('[data-server-status]');
-    if(el) el.textContent='Web 服務異常';
-  }
-}
-let currentLang=localStorage.getItem('linkgrab_lang')||'zh',currentTheme=localStorage.getItem('linkgrab_theme')||'dark',selectedFormat='mp4',selectedQuality='high',currentUrl='',currentTitle='',downloadHistory=[];
-const $=id=>document.getElementById(id),urlInput=$('urlInput'),searchInput=$('searchInput'),searchBtn=$('searchBtn'),searchPlatform=$('searchPlatform'),searchResults=$('searchResults'),videoInfo=$('videoInfo'),options=$('options'),qualityGroup=$('qualityGroup'),filenameSection=$('filenameSection'),filenameInput=$('filenameInput'),downloadBtn=$('downloadBtn'),errorMsg=$('errorMsg'),loadingOverlay=$('loadingOverlay'),historyList=$('historyList'),toast=$('toast');
-function applyTheme(){document.body.classList.toggle('light',currentTheme==='light')}applyTheme();$('themeButton').onclick=()=>{currentTheme=currentTheme==='dark'?'light':'dark';localStorage.setItem('linkgrab_theme',currentTheme);applyTheme()};$('langButton').onclick=()=>{currentLang=currentLang==='zh'?'en':'zh';localStorage.setItem('linkgrab_lang',currentLang);location.reload()};
-function esc(v){const d=document.createElement('div');d.textContent=v??'';return d.innerHTML}function duration(s){s=Number(s||0);if(!s)return'0:00';const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=Math.floor(s%60);return h?`${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`:`${m}:${String(x).padStart(2,'0')}`}function safe(v){return(v||'').trim().replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,' ').replace(/\.+$/,'').slice(0,120)}function toastMsg(m){toast.textContent=m;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200)}function err(m){errorMsg.textContent='⚠ '+m;errorMsg.style.display='block'}function noerr(){errorMsg.style.display='none'}function loading(on,t='正在處理',d='請稍候...'){loadingOverlay.style.display=on?'flex':'none';$('loadingTitle').textContent=t;$('loadingDesc').textContent=d;$('analyzeBtn').disabled=on;$('searchBtn').disabled=on;downloadBtn.disabled=on||!currentUrl}
-$('pasteBtn').onclick=async()=>{try{const t=await navigator.clipboard.readText();if(!t)throw 0;urlInput.value=t.trim();toastMsg('已貼上連結')}catch{toastMsg('無法讀取剪貼簿')}};
-document.querySelectorAll('[data-format]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-format]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');selectedFormat=b.dataset.format;qualityGroup.style.display=selectedFormat==='mp3'?'none':'grid'});document.querySelectorAll('[data-quality]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-quality]').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');selectedQuality=b.dataset.quality});
-async function searchMedia(){const q=searchInput.value.trim();if(!q)return toastMsg('請輸入搜尋關鍵字');searchResults.style.display='block';searchResults.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted);font-size:10px">🔍 搜尋中...</div>';try{const r=await fetch(API_URL+'/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,platform:searchPlatform.value,limit:10})});const d=await readApiResponse(r);searchResults.innerHTML=d.results?.length?d.results.map(i=>`<div class="search-result" data-url="${esc(i.url||'')}">${i.thumbnail?`<img class="result-thumb" src="${esc(i.thumbnail)}">`:'<div class="result-thumb"></div>'}<div class="result-info"><div class="result-title">${esc(i.title||'未命名')}</div><div class="result-meta">${esc(i.uploader||'-')} · ${duration(i.duration)}</div></div><button class="result-use">使用</button></div>`).join(''):'<div style="padding:18px;text-align:center;color:var(--muted);font-size:10px">😔 沒有找到結果</div>';document.querySelectorAll('.search-result').forEach(i=>i.onclick=()=>{urlInput.value=i.dataset.url;searchResults.style.display='none';analyzeUrl()})}catch(e){searchResults.innerHTML=`<div style="padding:18px;text-align:center;color:#ff8c9b;font-size:10px">❌ ${esc(e.message)}</div>`}}
-searchBtn.onclick=searchMedia;searchInput.onkeydown=e=>{if(e.key==='Enter')searchMedia()};
-async function analyzeUrl(){const url=urlInput.value.trim();if(!url)return err('請先輸入網址');noerr();currentUrl=url;videoInfo.style.display='none';options.style.display='none';filenameSection.style.display='none';downloadBtn.disabled=true;loading(true,'正在分析連結','正在取得媒體資訊...');try{const r=await fetch(API_URL+'/api/info',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});const d=await readApiResponse(r);currentTitle=d.title||'未命名影片';$('videoThumbnail').src=d.thumbnail||'';$('videoTitleLarge').textContent=currentTitle;$('videoUploader').textContent=d.uploader||'-';$('videoDuration').textContent=duration(d.duration);$('videoPlatform').textContent=d.platform||'-';videoInfo.style.display='block';options.style.display='grid';filenameSection.style.display='block';downloadBtn.disabled=false;toastMsg('分析完成')}catch(e){err(e.message)}finally{loading(false)}}$('analyzeBtn').onclick=analyzeUrl;urlInput.onkeydown=e=>{if(e.key==='Enter')analyzeUrl()};
-async function downloadMedia(){if(!currentUrl)return err('請先分析網址');noerr();let filename=safe(filenameInput.value);if(!filename)filename=safe(currentTitle)||'LinkGrab';if(!filename.toLowerCase().endsWith('.'+selectedFormat))filename+='.'+selectedFormat;loading(true,'正在下載','正在處理媒體檔案，請稍候...');try{const r=await fetch(API_URL+'/api/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:currentUrl,quality:selectedQuality,format:selectedFormat,filename})});if(!r.ok){let d={};try{d=await r.json()}catch{}throw Error(d.error||'下載失敗')}const blob=await r.blob(),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);addHistory(currentTitle,currentUrl,selectedFormat);toastMsg('下載完成')}catch(e){err(e.message)}finally{loading(false);downloadBtn.disabled=!currentUrl}}downloadBtn.onclick=downloadMedia;
-function loadHistory(){try{downloadHistory=JSON.parse(localStorage.getItem('linkgrab_history')||'[]')}catch{downloadHistory=[]}renderHistory()}function saveHistory(){localStorage.setItem('linkgrab_history',JSON.stringify(downloadHistory.slice(0,20)));renderHistory()}function addHistory(title,url,format){downloadHistory=downloadHistory.filter(x=>x.url!==url);downloadHistory.unshift({title:title||'Unknown',url,format,time:new Date().toLocaleString()});downloadHistory=downloadHistory.slice(0,20);saveHistory()}function renderHistory(){if(!downloadHistory.length){historyList.innerHTML='<div class="history-empty"><div class="history-empty-icon">◷</div><div class="history-empty-text">尚無下載記錄</div></div>';return}historyList.innerHTML=downloadHistory.map(i=>`<div class="history-item"><div class="history-icon">${i.format==='mp3'?'🎵':'🎬'}</div><div class="history-info"><div class="history-name">${esc(i.title)}</div><div class="history-time">${esc(i.time)}</div></div><button class="history-download" data-url="${esc(i.url)}">使用</button></div>`).join('');historyList.querySelectorAll('.history-download').forEach(b=>b.onclick=()=>{urlInput.value=b.dataset.url;analyzeUrl()})}loadHistory();$('clearHistory').onclick=()=>{downloadHistory=[];saveHistory();toastMsg('下載記錄已清空')};
-$('navContact').onclick=()=>{$('contactModal').classList.add('show')};$('closeContact').onclick=()=>{$('contactModal').classList.remove('show')};$('contactModal').onclick=e=>{if(e.target===$('contactModal'))$('contactModal').classList.remove('show')};$('copyEmail').onclick=async()=>{try{await navigator.clipboard.writeText('willie.develop467@gmail.com');toastMsg('Email 已複製')}catch{toastMsg('willie.develop467@gmail.com')}};$('navFAQ').onclick=()=>alert('❓ 常見問題\n\n1. 如何下載？\n貼上網址 → 分析 → 選擇格式 → 開始下載。\n\n2. 可以下載哪些格式？\nMP4 影片與 MP3 音訊。\n\n3. 可以自訂檔名嗎？\n可以。\n\n4. 下載記錄在哪裡？\n記錄保存在目前瀏覽器的本機儲存空間。');$('navHistory').onclick=()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));$('navHistory').classList.add('active');historyList.scrollTop=0};$('navHome').onclick=()=>{document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));$('navHome').classList.add('active')};document.onkeydown=e=>{if(e.key==='Escape')$('contactModal').classList.remove('show')};
-</script></body></html>
-checkServer();
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
+  />
+
+  <title>LinkGrab 1.0.2</title>
+
+  <meta
+    name="description"
+    content="LinkGrab — 簡單快速的網頁影音下載工具"
+  />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        sans-serif;
+      background: #f5f7fb;
+      color: #111827;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* =========================
+       Header
+    ========================= */
+
+    .header {
+      height: 72px;
+      background: rgba(255, 255, 255, 0.94);
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #111827;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .brand-version {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 3px;
+    }
+
+    .status-top {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #4b5563;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+    }
+
+    /* =========================
+       Main
+    ========================= */
+
+    .main {
+      width: min(1120px, calc(100% - 48px));
+      margin: 0 auto;
+      flex: 1;
+      padding: 42px 0 48px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 1.12;
+      letter-spacing: -1.5px;
+      font-weight: 850;
+    }
+
+    .hero p {
+      margin: 12px auto 0;
+      color: #6b7280;
+      font-size: 16px;
+      line-height: 1.7;
+      max-width: 620px;
+    }
+
+    /* =========================
+       Platform bar
+    ========================= */
+
+    .platform-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
+    }
+
+    .platform-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    .platforms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .platform {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      font-size: 13px;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    .platform .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      flex-shrink: 0;
+    }
+
+    .platform.testing .dot {
+      background: #f59e0b;
+    }
+
+    .platform.disabled .dot {
+      background: #ef4444;
+    }
+
+    .platform.disabled {
+      color: #9ca3af;
+      background: #f9fafb;
+    }
+
+    /* =========================
+       Download card
+    ========================= */
+
+    .download-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 14px 40px rgba(15, 23, 42, 0.07);
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .section-description {
+      margin: 7px 0 22px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .url-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+    }
+
+    .url-input {
+      width: 100%;
+      min-width: 0;
+      height: 52px;
+      border: 1px solid #d1d5db;
+      border-radius: 14px;
+      outline: none;
+      padding: 0 16px;
+      background: #fff;
+      color: #111827;
+      transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
+    }
+
+    .url-input::placeholder {
+      color: #9ca3af;
+    }
+
+    .url-input:focus {
+      border-color: #111827;
+      box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.07);
+    }
+
+    .primary-btn {
+      height: 52px;
+      border: 0;
+      border-radius: 14px;
+      padding: 0 22px;
+      background: #111827;
+      color: white;
+      font-weight: 800;
+      transition:
+        transform 0.15s ease,
+        opacity 0.15s ease,
+        background 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .primary-btn:hover {
+      background: #1f2937;
+    }
+
+    .primary-btn:active {
+      transform: scale(0.98);
+    }
+
+    .primary-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    /* =========================
+       Options
+    ========================= */
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .option {
+      border: 1px solid #e5e7eb;
+      border-radius: 15px;
+      padding: 14px;
+      background: #fafafa;
+    }
+
+    .option label {
+      display: block;
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    .option select,
+    .option input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      padding: 0 11px;
+      outline: none;
+    }
+
+    /* =========================
+       Result
+    ========================= */
+
+    .result {
+      display: none;
+      margin-top: 20px;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      overflow: hidden;
+      background: white;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .result-inner {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 20px;
+    }
+
+    .thumbnail {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border-radius: 13px;
+      background: #f3f4f6;
+    }
+
+    .result-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .result-platform {
+      display: inline-flex;
+      width: fit-content;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #4b5563;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 9px;
+    }
+
+    .result-title {
+      font-size: 20px;
+      line-height: 1.45;
+      font-weight: 800;
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .result-meta {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 9px;
+    }
+
+    .download-actions {
+      margin-top: auto;
+      padding-top: 18px;
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .secondary-btn {
+      min-height: 44px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      background: white;
+      color: #111827;
+      padding: 0 15px;
+      font-weight: 750;
+    }
+
+    .secondary-btn:hover {
+      background: #f9fafb;
+    }
+
+    /* =========================
+       Loading
+    ========================= */
+
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .loading.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 17px;
+      height: 17px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #111827;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* =========================
+       Message
+    ========================= */
+
+    .message {
+      display: none;
+      margin-top: 15px;
+      border-radius: 13px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.error {
+      color: #991b1b;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+    }
+
+    .message.warning {
+      color: #92400e;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+    }
+
+    .message.success {
+      color: #166534;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    /* =========================
+       Footer
+    ========================= */
+
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+
+    /* =========================
+       Mobile
+    ========================= */
+
+    @media (max-width: 700px) {
+      .header {
+        height: 64px;
+        padding: 0 16px;
+      }
+
+      .brand-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+
+      .brand-title {
+        font-size: 16px;
+      }
+
+      .brand-version {
+        font-size: 11px;
+      }
+
+      .status-top {
+        font-size: 11px;
+      }
+
+      .main {
+        width: min(100% - 24px, 1120px);
+        padding: 26px 0 32px;
+      }
+
+      .hero {
+        margin-bottom: 23px;
+      }
+
+      .hero h1 {
+        font-size: 31px;
+        letter-spacing: -1px;
+      }
+
+      .hero p {
+        font-size: 14px;
+        margin-top: 9px;
+      }
+
+      .platform-card {
+        border-radius: 17px;
+        padding: 14px;
+      }
+
+      .platforms {
+        gap: 7px;
+      }
+
+      .platform {
+        padding: 7px 9px;
+        font-size: 12px;
+      }
+
+      .download-card {
+        border-radius: 18px;
+        padding: 18px;
+      }
+
+      .section-title {
+        font-size: 18px;
+      }
+
+      .section-description {
+        font-size: 13px;
+        margin-bottom: 17px;
+      }
+
+      .url-row {
+        grid-template-columns: 1fr;
+        gap: 9px;
+      }
+
+      .url-input {
+        height: 50px;
+        font-size: 16px;
+      }
+
+      .primary-btn {
+        width: 100%;
+        height: 50px;
+      }
+
+      .options {
+        grid-template-columns: 1fr;
+        gap: 9px;
+        margin-top: 12px;
+      }
+
+      .option {
+        padding: 12px;
+      }
+
+      .result-inner {
+        grid-template-columns: 1fr;
+        padding: 15px;
+        gap: 14px;
+      }
+
+      .thumbnail {
+        max-height: 210px;
+      }
+
+      .result-title {
+        font-size: 17px;
+      }
+
+      .download-actions {
+        margin-top: 5px;
+      }
+
+      .secondary-btn {
+        flex: 1;
+      }
+
+      .footer {
+        padding: 20px 14px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .status-top span {
+        display: none;
+      }
+
+      .hero h1 {
+        font-size: 28px;
+      }
+
+      .platform {
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">L</div>
+
+        <div class="brand-text">
+          <div class="brand-title">LinkGrab</div>
+          <div class="brand-version">Web 1.0.2</div>
+        </div>
+      </div>
+
+      <div class="status-top">
+        <span class="status-dot"></span>
+        <span>服務正常</span>
+      </div>
+    </header>
+
+    <main class="main">
+
+      <section class="hero">
+        <h1>簡單、快速地取得影音</h1>
+        <p>
+          貼上影音網址，分析內容後選擇 MP4 或 MP3。
+        </p>
+      </section>
+
+      <section class="platform-card">
+        <div class="platform-title">支援平台</div>
+
+        <div class="platforms">
+
+          <div class="platform">
+            <span class="dot"></span>
+            Instagram
+          </div>
+
+          <div class="platform">
+            <span class="dot"></span>
+            Facebook
+          </div>
+
+          <div class="platform">
+            <span class="dot"></span>
+            TikTok
+          </div>
+
+          <div class="platform">
+            <span class="dot"></span>
+            X / Twitter
+          </div>
+
+          <div class="platform">
+            <span class="dot"></span>
+            Vimeo
+          </div>
+
+          <div class="platform">
+            <span class="dot"></span>
+            SoundCloud
+          </div>
+
+          <div class="platform testing">
+            <span class="dot"></span>
+            Threads
+          </div>
+
+          <div class="platform disabled">
+            <span class="dot"></span>
+            YouTube 暫不可用
+          </div>
+
+        </div>
+      </section>
+
+      <section class="download-card">
+
+        <h2 class="section-title">貼上網址</h2>
+
+        <p class="section-description">
+          支援公開影音網址。YouTube 目前暫停使用。
+        </p>
+
+        <div class="url-row">
+          <input
+            id="urlInput"
+            class="url-input"
+            type="url"
+            inputmode="url"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="https://..."
+          />
+
+          <button id="analyzeBtn" class="primary-btn">
+            分析網址
+          </button>
+        </div>
+
+        <div id="loading" class="loading">
+          <span class="spinner"></span>
+          <span id="loadingText">正在分析網址…</span>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="options">
+
+          <div class="option">
+            <label for="formatSelect">下載格式</label>
+
+            <select id="formatSelect">
+              <option value="mp4">MP4 — 影片＋音訊</option>
+              <option value="mp3">MP3 — 僅音訊</option>
+            </select>
+          </div>
+
+          <div class="option" id="qualityOption">
+            <label for="qualitySelect">影片品質</label>
+
+            <select id="qualitySelect">
+              <option value="high">高畫質 — 最多 1080p</option>
+              <option value="medium">中畫質 — 最多 720p</option>
+              <option value="low">低畫質 — 最多 480p</option>
+            </select>
+          </div>
+
+          <div class="option">
+            <label for="filenameInput">檔案名稱</label>
+
+            <input
+              id="filenameInput"
+              type="text"
+              maxlength="100"
+              placeholder="LinkGrab"
+            />
+          </div>
+
+        </div>
+
+        <div id="result" class="result">
+
+          <div class="result-inner">
+
+            <img
+              id="thumbnail"
+              class="thumbnail"
+              alt="影片縮圖"
+            />
+
+            <div class="result-info">
+
+              <div id="resultPlatform" class="result-platform">
+                Platform
+              </div>
+
+              <h3 id="resultTitle" class="result-title">
+                未命名影片
+              </h3>
+
+              <div id="resultMeta" class="result-meta"></div>
+
+              <div class="download-actions">
+
+                <button
+                  id="downloadBtn"
+                  class="primary-btn"
+                  type="button"
+                >
+                  下載
+                </button>
+
+                <button
+                  id="clearBtn"
+                  class="secondary-btn"
+                  type="button"
+                >
+                  清除
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      LinkGrab 1.0.2 · Web Version
+    </footer>
+
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const $ = (id) => document.getElementById(id);
+
+      const urlInput = $("urlInput");
+      const analyzeBtn = $("analyzeBtn");
+      const downloadBtn = $("downloadBtn");
+      const clearBtn = $("clearBtn");
+
+      const formatSelect = $("formatSelect");
+      const qualitySelect = $("qualitySelect");
+      const qualityOption = $("qualityOption");
+      const filenameInput = $("filenameInput");
+
+      const loading = $("loading");
+      const loadingText = $("loadingText");
+      const message = $("message");
+
+      const result = $("result");
+      const thumbnail = $("thumbnail");
+      const resultPlatform = $("resultPlatform");
+      const resultTitle = $("resultTitle");
+      const resultMeta = $("resultMeta");
+
+      let currentInfo = null;
+      let busy = false;
+
+      const API_TIMEOUT = 120000;
+
+      function showMessage(text, type = "error") {
+        message.textContent = text;
+        message.className = `message show ${type}`;
+      }
+
+      function hideMessage() {
+        message.textContent = "";
+        message.className = "message";
+      }
+
+      function setLoading(active, text = "處理中…") {
+        loadingText.textContent = text;
+        loading.classList.toggle("show", active);
+
+        analyzeBtn.disabled = active;
+        downloadBtn.disabled = active;
+
+        busy = active;
+      }
+
+      function hideResult() {
+        result.classList.remove("show");
+        currentInfo = null;
+      }
+
+      function showResult(data) {
+        currentInfo = data;
+
+        result.classList.add("show");
+
+        resultPlatform.textContent =
+          data.platform || "未知平台";
+
+        resultTitle.textContent =
+          data.title || "未命名影片";
+
+        const meta = [];
+
+        if (data.uploader) {
+          meta.push(data.uploader);
+        }
+
+        if (data.duration) {
+          meta.push(formatDuration(data.duration));
+        }
+
+        if (data.view_count) {
+          meta.push(`${Number(data.view_count).toLocaleString()} 次觀看`);
+        }
+
+        resultMeta.textContent =
+          meta.length ? meta.join(" · ") : "已取得影片資訊";
+
+        if (data.thumbnail) {
+          thumbnail.src = data.thumbnail;
+          thumbnail.style.display = "block";
+        } else {
+          thumbnail.removeAttribute("src");
+          thumbnail.style.display = "none";
+        }
+
+        if (!filenameInput.value.trim()) {
+          filenameInput.value = safeName(data.title || "LinkGrab");
+        }
+      }
+
+      function formatDuration(seconds) {
+        seconds = Number(seconds) || 0;
+
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+
+        if (h > 0) {
+          return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }
+
+        return `${m}:${String(s).padStart(2, "0")}`;
+      }
+
+      function safeName(name) {
+        return String(name || "LinkGrab")
+          .replace(/[\\/:*?"<>|]/g, "_")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 100) || "LinkGrab";
+      }
+
+      function isYouTube(url) {
+        const value = String(url).toLowerCase();
+
+        return (
+          value.includes("youtube.com") ||
+          value.includes("youtu.be")
+        );
+      }
+
+      function isSupportedPlatform(url) {
+        const value = String(url).toLowerCase();
+
+        return (
+          value.includes("instagram.com") ||
+          value.includes("facebook.com") ||
+          value.includes("fb.watch") ||
+          value.includes("tiktok.com") ||
+          value.includes("twitter.com") ||
+          value.includes("x.com") ||
+          value.includes("vimeo.com") ||
+          value.includes("soundcloud.com") ||
+          value.includes("threads.net") ||
+          value.includes("threads.com")
+        );
+      }
+
+      async function fetchWithTimeout(url, options = {}) {
+        const controller = new AbortController();
+
+        const timer = setTimeout(() => {
+          controller.abort();
+        }, API_TIMEOUT);
+
+        try {
+          return await fetch(url, {
+            ...options,
+            signal: controller.signal
+          });
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
+      async function readJson(response) {
+        let data = null;
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error(`伺服器回應異常（HTTP ${response.status}）`);
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+            `伺服器錯誤（HTTP ${response.status}）`
+          );
+        }
+
+        return data;
+      }
+
+      async function analyze() {
+        if (busy) return;
+
+        const url = urlInput.value.trim();
+
+        hideMessage();
+        hideResult();
+
+        if (!url) {
+          showMessage("請先貼上網址。");
+          urlInput.focus();
+          return;
+        }
+
+        if (!/^https?:\/\//i.test(url)) {
+          showMessage("請輸入完整的 http:// 或 https:// 網址。");
+          urlInput.focus();
+          return;
+        }
+
+        if (isYouTube(url)) {
+          showMessage(
+            "YouTube 目前暫不可用。其他支援平台可以正常使用。",
+            "warning"
+          );
+          return;
+        }
+
+        if (!isSupportedPlatform(url)) {
+          showMessage(
+            "目前這個網址不在 LinkGrab 的支援平台清單中。",
+            "warning"
+          );
+          return;
+        }
+
+        setLoading(true, "正在分析網址…");
+
+        try {
+          const response = await fetchWithTimeout("/api/info", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ url })
+          });
+
+          const data = await readJson(response);
+
+          showResult(data);
+
+          showMessage(
+            "影片資訊取得成功，可以開始下載。",
+            "success"
+          );
+        } catch (error) {
+          if (error.name === "AbortError") {
+            showMessage(
+              "分析等待時間過長，請稍後再試。"
+            );
+          } else {
+            showMessage(
+              error.message || "分析失敗，請稍後再試。"
+            );
+          }
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      async function download() {
+        if (busy) return;
+
+        if (!currentInfo) {
+          showMessage("請先分析網址。");
+          return;
+        }
+
+        const url = urlInput.value.trim();
+
+        if (!url) {
+          showMessage("網址不存在，請重新分析。");
+          return;
+        }
+
+        if (isYouTube(url)) {
+          showMessage(
+            "YouTube 目前暫不可用。",
+            "warning"
+          );
+          return;
+        }
+
+        const format = formatSelect.value === "mp3"
+          ? "mp3"
+          : "mp4";
+
+        const quality =
+          ["high", "medium", "low"].includes(
+            qualitySelect.value
+          )
+            ? qualitySelect.value
+            : "high";
+
+        const filename =
+          safeName(
+            filenameInput.value.trim() ||
+            currentInfo.title ||
+            "LinkGrab"
+          );
+
+        hideMessage();
+
+        setLoading(
+          true,
+          format === "mp3"
+            ? "正在製作 MP3…"
+            : "正在製作 MP4，請稍候…"
+        );
+
+        try {
+          const response = await fetchWithTimeout(
+            "/api/download",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                url,
+                format,
+                quality,
+                filename
+              })
+            }
+          );
+
+          if (!response.ok) {
+            let data = null;
+
+            try {
+              data = await response.json();
+            } catch {}
+
+            throw new Error(
+              data?.error ||
+              `下載失敗（HTTP ${response.status}）`
+            );
+          }
+
+          const blob = await response.blob();
+
+          if (!blob || blob.size === 0) {
+            throw new Error("伺服器沒有回傳檔案。");
+          }
+
+          const objectUrl = URL.createObjectURL(blob);
+
+          const link = document.createElement("a");
+          link.href = objectUrl;
+          link.download = `${filename}.${format}`;
+          document.body.appendChild(link);
+
+          link.click();
+          link.remove();
+
+          setTimeout(() => {
+            URL.revokeObjectURL(objectUrl);
+          }, 30000);
+
+          showMessage(
+            "下載已開始。",
+            "success"
+          );
+        } catch (error) {
+          if (error.name === "AbortError") {
+            showMessage(
+              "下載等待時間過長，請稍後再試。"
+            );
+          } else {
+            showMessage(
+              error.message || "下載失敗，請稍後再試。"
+            );
+          }
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function clearAll() {
+        if (busy) return;
+
+        urlInput.value = "";
+        filenameInput.value = "";
+
+        hideMessage();
+        hideResult();
+
+        thumbnail.removeAttribute("src");
+
+        urlInput.focus();
+      }
+
+      formatSelect.addEventListener("change", () => {
+        const isMp3 = formatSelect.value === "mp3";
+
+        qualityOption.style.display =
+          isMp3 ? "none" : "";
+      });
+
+      analyzeBtn.addEventListener("click", analyze);
+
+      downloadBtn.addEventListener("click", download);
+
+      clearBtn.addEventListener("click", clearAll);
+
+      urlInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          analyze();
+        }
+      });
+
+      window.addEventListener("pageshow", () => {
+        busy = false;
+        setLoading(false);
+      });
+
+      formatSelect.dispatchEvent(
+        new Event("change")
+      );
+    })();
+  </script>
+</body>
+</html>
