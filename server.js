@@ -16,8 +16,8 @@ const YTDLP =
   process.env.YTDLP_PATH ||
   path.join(ROOT, 'bin', 'yt-dlp');
 
-const FFPROBE = '/usr/bin/ffprobe';
 const FFMPEG = '/usr/bin/ffmpeg';
+const FFPROBE = '/usr/bin/ffprobe';
 
 fs.mkdirSync(DOWNLOADS, { recursive: true });
 
@@ -26,7 +26,7 @@ app.disable('x-powered-by');
 app.use(express.static(PUBLIC));
 
 /* =========================================================
-   Helpers
+   Command Runner
 ========================================================= */
 
 function run(file, args, timeout = 10 * 60 * 1000) {
@@ -60,6 +60,10 @@ function run(file, args, timeout = 10 * 60 * 1000) {
   });
 }
 
+/* =========================================================
+   Platform Detection
+========================================================= */
+
 function isYouTube(url) {
   const u = String(url).toLowerCase();
 
@@ -81,7 +85,9 @@ function isThreads(url) {
 function platformOf(url) {
   const u = String(url).toLowerCase();
 
-  if (isYouTube(u)) return 'YouTube';
+  if (isYouTube(u)) {
+    return 'YouTube';
+  }
 
   if (
     u.includes('facebook.com') ||
@@ -96,10 +102,6 @@ function platformOf(url) {
 
   if (isThreads(u)) {
     return 'Threads';
-  }
-
-  if (u.includes('soundcloud.com')) {
-    return 'SoundCloud';
   }
 
   if (u.includes('tiktok.com')) {
@@ -117,8 +119,16 @@ function platformOf(url) {
     return 'Vimeo';
   }
 
+  if (u.includes('soundcloud.com')) {
+    return 'SoundCloud';
+  }
+
   return 'Unknown';
 }
+
+/* =========================================================
+   Filename
+========================================================= */
 
 function safeName(name) {
   return String(name || 'LinkGrab')
@@ -128,30 +138,41 @@ function safeName(name) {
     .slice(0, 100) || 'LinkGrab';
 }
 
+/* =========================================================
+   Find Output
+========================================================= */
+
 function findOutput(dir, ext) {
-  const files = fs.readdirSync(dir, {
+  const entries = fs.readdirSync(dir, {
     withFileTypes: true
   });
 
   const found = [];
 
-  for (const item of files) {
-    const p = path.join(dir, item.name);
+  for (const entry of entries) {
+    const filePath = path.join(dir, entry.name);
 
-    if (item.isDirectory()) {
-      found.push(...findOutput(p, ext));
-    } else if (
-      item.name.toLowerCase().endsWith(ext) &&
-      !item.name.endsWith('.part')
+    if (entry.isDirectory()) {
+      found.push(...findOutput(filePath, ext));
+      continue;
+    }
+
+    if (
+      entry.name.toLowerCase().endsWith(ext) &&
+      !entry.name.endsWith('.part')
     ) {
-      found.push(p);
+      found.push(filePath);
     }
   }
 
   return found;
 }
 
-async function mediaHasVideoAndAudio(file) {
+/* =========================================================
+   Media Information
+========================================================= */
+
+async function getMediaStreams(file) {
   try {
     const { stdout } = await run(
       FFPROBE,
@@ -159,7 +180,7 @@ async function mediaHasVideoAndAudio(file) {
         '-v',
         'error',
         '-show_entries',
-        'stream=codec_type',
+        'stream=index,codec_type,codec_name,profile,pix_fmt,width,height',
         '-of',
         'json',
         file
@@ -167,69 +188,143 @@ async function mediaHasVideoAndAudio(file) {
       30 * 1000
     );
 
-    const streams =
-      JSON.parse(stdout).streams || [];
+    const data = JSON.parse(stdout);
 
-    return (
-      streams.some(
-        (s) => s.codec_type === 'video'
-      ) &&
-      streams.some(
-        (s) => s.codec_type === 'audio'
-      )
-    );
+    return Array.isArray(data.streams)
+      ? data.streams
+      : [];
   } catch {
-    return false;
+    return [];
   }
 }
 
-/* =========================================================
-   YouTube
-========================================================= */
+async function mediaHasVideoAndAudio(file) {
+  const streams = await getMediaStreams(file);
 
-function youtubeError() {
-  return new Error(
-    'YouTube 目前暫不可用。請改用其他支援平台。'
+  return (
+    streams.some(
+      (stream) =>
+        stream.codec_type === 'video'
+    ) &&
+    streams.some(
+      (stream) =>
+        stream.codec_type === 'audio'
+    )
   );
 }
 
 /* =========================================================
-   yt-dlp arguments
+   MP4 Compatibility
 ========================================================= */
 
-function baseYtDlpArgs() {
-  return [
-    '--no-warnings',
-    '--no-playlist'
-  ];
+async function mediaIsCompatibleMp4(file) {
+  const streams = await getMediaStreams(file);
+
+  const video = streams.find(
+    (stream) =>
+      stream.codec_type === 'video'
+  );
+
+  const audio = streams.find(
+    (stream) =>
+      stream.codec_type === 'audio'
+  );
+
+  if (!video || !audio) {
+    return false;
+  }
+
+  /*
+   * 目標播放格式：
+   *
+   * Video: H.264 / AVC
+   * Audio: AAC
+   *
+   * 這是一般手機、Safari、Chrome、
+   * Windows 播放器都比較容易支援的組合。
+   */
+  const videoCompatible =
+    String(video.codec_name || '')
+      .toLowerCase() === 'h264';
+
+  const audioCompatible =
+    String(audio.codec_name || '')
+      .toLowerCase() === 'aac';
+
+  return (
+    videoCompatible &&
+    audioCompatible
+  );
 }
 
-/*
- * Threads 使用第三方 extractor plugin。
- *
- * YouTube 在目前 Render 環境暫停使用，
- * 因此不再嘗試呼叫 YouTube。
- */
-function infoArgs(url) {
-  return [
-    ...baseYtDlpArgs(),
-    '-J',
-    url
-  ];
+/* =========================================================
+   Convert MP4 to H.264 + AAC
+========================================================= */
+
+async function convertToCompatibleMp4(
+  input,
+  output
+) {
+  await run(
+    FFMPEG,
+    [
+      '-y',
+
+      '-i',
+      input,
+
+      /*
+       * H.264
+       */
+      '-c:v',
+      'libx264',
+
+      /*
+       * 適合手機及網頁播放
+       */
+      '-preset',
+      'veryfast',
+
+      '-crf',
+      '23',
+
+      /*
+       * AAC
+       */
+      '-c:a',
+      'aac',
+
+      '-b:a',
+      '192k',
+
+      /*
+       * MP4 網頁最佳化
+       */
+      '-movflags',
+      '+faststart',
+
+      output
+    ],
+    12 * 60 * 1000
+  );
 }
 
-function downloadBaseArgs(template) {
-  return [
-    '--no-warnings',
-    '--no-playlist',
-    '--newline',
-    '--retries',
-    '2',
-    '--fragment-retries',
-    '2',
-    '-o',
-    template
-  ];
+/* =========================================================
+   YouTube / Threads Disabled
+========================================================= */
+
+function rejectYouTube(res) {
+  return res.status(503).json({
+    error:
+      'YouTube 目前暫不可用，請改用其他支援平台。'
+  });
+}
+
+function rejectThreads(res) {
+  return res.status(503).json({
+    error:
+      'Threads 目前暫不可用，後端功能尚未完成。'
+  });
 }
 
 /* =========================================================
@@ -254,7 +349,7 @@ app.get('/api/hello', (req, res) => {
       twitter: true,
       vimeo: true,
       soundcloud: true,
-      threads: true
+      threads: false
     }
   });
 });
@@ -278,7 +373,7 @@ app.post('/api/search', async (req, res) => {
   ).trim();
 
   const platform = String(
-    req.body?.platform || 'YouTube'
+    req.body?.platform || ''
   ).toLowerCase();
 
   const limit = Math.min(
@@ -297,74 +392,81 @@ app.post('/api/search', async (req, res) => {
 
   if (!fs.existsSync(YTDLP)) {
     return res.status(500).json({
-      error: '伺服器尚未準備 yt-dlp'
+      error:
+        '伺服器尚未準備 yt-dlp'
     });
   }
 
   /*
-   * YouTube 搜尋目前停用。
-   * SoundCloud 搜尋仍保留。
+   * YouTube 搜尋暫停
    */
   if (platform.includes('youtube')) {
     return res.status(503).json({
-      error: 'YouTube 目前暫不可用。'
+      error:
+        'YouTube 目前暫不可用。'
     });
   }
 
-  const prefix =
+  /*
+   * SoundCloud 搜尋
+   */
+  if (
+    platform.includes('soundcloud') ||
     platform.includes('sound')
-      ? 'scsearch'
-      : null;
+  ) {
+    try {
+      const { stdout } = await run(
+        YTDLP,
+        [
+          '--flat-playlist',
+          '-J',
+          '--no-warnings',
+          `scsearch${limit}:${query}`
+        ],
+        90 * 1000
+      );
 
-  if (!prefix) {
-    return res.status(400).json({
-      error: '目前只有 SoundCloud 搜尋功能。'
-    });
+      const data = JSON.parse(stdout);
+
+      const results =
+        (data.entries || [])
+          .filter(Boolean)
+          .map((item) => ({
+            id: item.id || '',
+            url:
+              item.webpage_url ||
+              item.url ||
+              '',
+            title:
+              item.title ||
+              '未命名',
+            thumbnail:
+              item.thumbnail ||
+              '',
+            uploader:
+              item.uploader ||
+              item.channel ||
+              '',
+            duration:
+              item.duration ||
+              0
+          }));
+
+      return res.json({
+        results
+      });
+    } catch (e) {
+      return res.status(500).json({
+        error:
+          `搜尋失敗：${e.message}`
+      });
+    }
   }
 
-  try {
-    const { stdout } = await run(
-      YTDLP,
-      [
-        '--flat-playlist',
-        '-J',
-        '--no-warnings',
-        `${prefix}${limit}:${query}`
-      ],
-      90 * 1000
-    );
-
-    const data = JSON.parse(stdout);
-
-    const results = (data.entries || [])
-      .filter(Boolean)
-      .map((item) => ({
-        id: item.id || '',
-        url:
-          item.webpage_url ||
-          item.url ||
-          '',
-        title:
-          item.title ||
-          '未命名',
-        thumbnail:
-          item.thumbnail ||
-          '',
-        uploader:
-          item.uploader ||
-          item.channel ||
-          '',
-        duration:
-          item.duration ||
-          0
-      }));
-
-    res.json({ results });
-  } catch (e) {
-    res.status(500).json({
-      error: `搜尋失敗：${e.message}`
-    });
-  }
+  return res.status(400).json({
+    error:
+      '目前只有 SoundCloud 搜尋功能。'
+  });
 });
 
 /* =========================================================
@@ -384,36 +486,59 @@ app.post('/api/info', async (req, res) => {
 
   if (!/^https?:\/\//i.test(url)) {
     return res.status(400).json({
-      error: '請輸入有效的網址'
+      error:
+        '請輸入有效的網址'
     });
   }
 
-  const platform = platformOf(url);
+  const platform =
+    platformOf(url);
 
   /*
-   * YouTube 直接拒絕。
+   * YouTube
    */
   if (platform === 'YouTube') {
-    return res.status(503).json({
+    return rejectYouTube(res);
+  }
+
+  /*
+   * Threads
+   */
+  if (platform === 'Threads') {
+    return rejectThreads(res);
+  }
+
+  /*
+   * Unknown
+   */
+  if (platform === 'Unknown') {
+    return res.status(400).json({
       error:
-        'YouTube 目前暫不可用。請改用其他支援平台。'
+        '目前不支援這個網站。'
     });
   }
 
   if (!fs.existsSync(YTDLP)) {
     return res.status(500).json({
-      error: '伺服器尚未準備 yt-dlp'
+      error:
+        '伺服器尚未準備 yt-dlp'
     });
   }
 
   try {
     const { stdout } = await run(
       YTDLP,
-      infoArgs(url),
+      [
+        '-J',
+        '--no-warnings',
+        '--no-playlist',
+        url
+      ],
       90 * 1000
     );
 
-    const data = JSON.parse(stdout);
+    const data =
+      JSON.parse(stdout);
 
     res.json({
       title:
@@ -444,20 +569,9 @@ app.post('/api/info', async (req, res) => {
       platform
     });
   } catch (e) {
-    let errorMessage =
-      e?.message ||
-      '分析失敗';
-
-    /*
-     * Threads plugin / extractor 錯誤
-     */
-    if (platform === 'Threads') {
-      errorMessage =
-        `Threads 分析失敗：${errorMessage}`;
-    }
-
     res.status(500).json({
-      error: errorMessage
+      error:
+        `分析失敗：${e.message}`
     });
   }
 });
@@ -494,15 +608,30 @@ app.post('/api/download', async (req, res) => {
     });
   }
 
-  const platform = platformOf(url);
+  const platform =
+    platformOf(url);
 
   /*
-   * YouTube 暫時停用。
+   * YouTube
    */
   if (platform === 'YouTube') {
-    return res.status(503).json({
+    return rejectYouTube(res);
+  }
+
+  /*
+   * Threads
+   */
+  if (platform === 'Threads') {
+    return rejectThreads(res);
+  }
+
+  /*
+   * Unknown
+   */
+  if (platform === 'Unknown') {
+    return res.status(400).json({
       error:
-        'YouTube 目前暫不可用。請改用其他支援平台。'
+        '目前不支援這個網站。'
     });
   }
 
@@ -517,7 +646,10 @@ app.post('/api/download', async (req, res) => {
     `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
 
   const jobDir =
-    path.join(DOWNLOADS, jobId);
+    path.join(
+      DOWNLOADS,
+      jobId
+    );
 
   fs.mkdirSync(jobDir, {
     recursive: true
@@ -529,8 +661,18 @@ app.post('/api/download', async (req, res) => {
       `${requestedName}.%(ext)s`
     );
 
-  const args =
-    downloadBaseArgs(template);
+  const args = [
+    '--no-warnings',
+    '--no-playlist',
+    '--newline',
+    '--retries',
+    '2',
+    '--fragment-retries',
+    '2',
+
+    '-o',
+    template
+  ];
 
   /* =====================================================
      MP4
@@ -552,20 +694,20 @@ app.post('/api/download', async (req, res) => {
           : 480;
 
     /*
-     * 優先選擇影片＋音訊。
+     * 優先 H.264 + AAC。
      *
-     * Threads plugin 提供的公開 MP4
-     * 通常本身已經包含影音。
+     * 這對 Instagram、
+     * Facebook、TikTok、
+     * Vimeo 等網頁影片比較友善。
      *
-     * 其他平台則由 yt-dlp + ffmpeg
-     * 負責合併。
+     * 如果平台沒有 H.264/AAC，
+     * 才退回一般影片＋音訊。
      */
     args.push(
       '-f',
-      `bv*[height<=${height}]+ba/bv*+ba/b[ext=mp4]/b`,
+      `bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}]+ba/b[ext=mp4]/b`,
+
       '--merge-output-format',
-      'mp4',
-      '--remux-video',
       'mp4'
     );
   }
@@ -578,9 +720,12 @@ app.post('/api/download', async (req, res) => {
     args.push(
       '-f',
       'ba/b',
+
       '-x',
+
       '--audio-format',
       'mp3',
+
       '--audio-quality',
       '0'
     );
@@ -595,7 +740,7 @@ app.post('/api/download', async (req, res) => {
       12 * 60 * 1000
     );
 
-    const outputs =
+    let outputs =
       findOutput(
         jobDir,
         `.${format}`
@@ -607,20 +752,72 @@ app.post('/api/download', async (req, res) => {
       );
     }
 
-    const target = outputs[0];
+    let target =
+      outputs[0];
 
-    /*
-     * MP4 強制確認：
-     * 必須同時有 video + audio。
-     */
-    if (
-      format === 'mp4' &&
-      !(await mediaHasVideoAndAudio(target))
-    ) {
-      throw new Error(
-        'MP4 缺少影片或音訊軌，無法提供下載'
-      );
+    /* ===================================================
+       MP4 Compatibility Check
+    =================================================== */
+
+    if (format === 'mp4') {
+      const hasVideoAudio =
+        await mediaHasVideoAndAudio(
+          target
+        );
+
+      if (!hasVideoAudio) {
+        throw new Error(
+          'MP4 缺少影片或音訊軌，無法提供下載'
+        );
+      }
+
+      /*
+       * 如果不是 H.264 + AAC，
+       * 使用 FFmpeg 重新編碼。
+       *
+       * 不只是改副檔名。
+       */
+      const compatible =
+        await mediaIsCompatibleMp4(
+          target
+        );
+
+      if (!compatible) {
+        const converted =
+          path.join(
+            jobDir,
+            `${requestedName}.compatible.mp4`
+          );
+
+        await convertToCompatibleMp4(
+          target,
+          converted
+        );
+
+        /*
+         * 確認轉碼後真的可用
+         */
+        const convertedOk =
+          await mediaIsCompatibleMp4(
+            converted
+          );
+
+        if (!convertedOk) {
+          throw new Error(
+            'MP4 轉碼完成，但影片格式檢查失敗'
+          );
+        }
+
+        /*
+         * 使用轉碼後檔案
+         */
+        target = converted;
+      }
     }
+
+    /* ===================================================
+       Response
+    =================================================== */
 
     const filename =
       `${requestedName}.${format}`;
@@ -651,6 +848,7 @@ app.post('/api/download', async (req, res) => {
         );
       }
     );
+
   } catch (e) {
     fs.rm(
       jobDir,
@@ -661,24 +859,15 @@ app.post('/api/download', async (req, res) => {
       () => {}
     );
 
-    let errorMessage =
-      e?.message ||
-      '下載失敗';
-
-    if (platform === 'Threads') {
-      errorMessage =
-        `Threads 下載失敗：${errorMessage}`;
-    }
-
     res.status(500).json({
       error:
-        `下載失敗：${errorMessage}`
+        `下載失敗：${e.message}`
     });
   }
 });
 
 /* =========================================================
-   SPA fallback
+   SPA Fallback
 ========================================================= */
 
 app.use((req, res) => {
