@@ -82,6 +82,12 @@ function isThreads(url) {
   );
 }
 
+function isTikTok(url) {
+  return String(url)
+    .toLowerCase()
+    .includes('tiktok.com');
+}
+
 function platformOf(url) {
   const u = String(url).toLowerCase();
 
@@ -104,7 +110,7 @@ function platformOf(url) {
     return 'Threads';
   }
 
-  if (u.includes('tiktok.com')) {
+  if (isTikTok(u)) {
     return 'TikTok';
   }
 
@@ -159,7 +165,8 @@ function findOutput(dir, ext) {
 
     if (
       entry.name.toLowerCase().endsWith(ext) &&
-      !entry.name.endsWith('.part')
+      !entry.name.endsWith('.part') &&
+      !entry.name.endsWith('.ytdl')
     ) {
       found.push(filePath);
     }
@@ -198,35 +205,36 @@ async function getMediaStreams(file) {
   }
 }
 
+/* =========================================================
+   MP4 Compatibility Check
+========================================================= */
+
 async function mediaHasVideoAndAudio(file) {
   const streams = await getMediaStreams(file);
 
-  return (
-    streams.some(
-      (stream) =>
-        stream.codec_type === 'video'
-    ) &&
-    streams.some(
-      (stream) =>
-        stream.codec_type === 'audio'
-    )
+  const hasVideo = streams.some(
+    stream =>
+      stream.codec_type === 'video'
   );
-}
 
-/* =========================================================
-   MP4 Compatibility
-========================================================= */
+  const hasAudio = streams.some(
+    stream =>
+      stream.codec_type === 'audio'
+  );
+
+  return hasVideo && hasAudio;
+}
 
 async function mediaIsCompatibleMp4(file) {
   const streams = await getMediaStreams(file);
 
   const video = streams.find(
-    (stream) =>
+    stream =>
       stream.codec_type === 'video'
   );
 
   const audio = streams.find(
-    (stream) =>
+    stream =>
       stream.codec_type === 'audio'
   );
 
@@ -234,31 +242,22 @@ async function mediaIsCompatibleMp4(file) {
     return false;
   }
 
-  /*
-   * 目標播放格式：
-   *
-   * Video: H.264 / AVC
-   * Audio: AAC
-   *
-   * 這是一般手機、Safari、Chrome、
-   * Windows 播放器都比較容易支援的組合。
-   */
-  const videoCompatible =
+  const videoCodec =
     String(video.codec_name || '')
-      .toLowerCase() === 'h264';
+      .toLowerCase();
 
-  const audioCompatible =
+  const audioCodec =
     String(audio.codec_name || '')
-      .toLowerCase() === 'aac';
+      .toLowerCase();
 
   return (
-    videoCompatible &&
-    audioCompatible
+    videoCodec === 'h264' &&
+    audioCodec === 'aac'
   );
 }
 
 /* =========================================================
-   Convert MP4 to H.264 + AAC
+   Convert To Browser-Compatible MP4
 ========================================================= */
 
 async function convertToCompatibleMp4(
@@ -274,14 +273,29 @@ async function convertToCompatibleMp4(
       input,
 
       /*
-       * H.264
+       * H.264 / AVC
        */
+      '-map',
+      '0:v:0',
+
+      /*
+       * AAC
+       */
+      '-map',
+      '0:a:0?',
+
       '-c:v',
       'libx264',
 
       /*
-       * 適合手機及網頁播放
+       * 手機、Safari、Chrome 相容性
        */
+      '-profile:v',
+      'high',
+
+      '-level',
+      '4.1',
+
       '-preset',
       'veryfast',
 
@@ -289,13 +303,22 @@ async function convertToCompatibleMp4(
       '23',
 
       /*
-       * AAC
+       * 音訊
        */
       '-c:a',
       'aac',
 
       '-b:a',
       '192k',
+
+      '-ar',
+      '48000',
+
+      /*
+       * 避免奇怪的像素格式
+       */
+      '-pix_fmt',
+      'yuv420p',
 
       /*
        * MP4 網頁最佳化
@@ -305,12 +328,55 @@ async function convertToCompatibleMp4(
 
       output
     ],
-    12 * 60 * 1000
+    15 * 60 * 1000
   );
 }
 
 /* =========================================================
-   YouTube / Threads Disabled
+   Validate Converted MP4
+========================================================= */
+
+async function validateMp4(file) {
+  const streams = await getMediaStreams(file);
+
+  const video = streams.find(
+    stream =>
+      stream.codec_type === 'video'
+  );
+
+  const audio = streams.find(
+    stream =>
+      stream.codec_type === 'audio'
+  );
+
+  if (!video || !audio) {
+    return false;
+  }
+
+  const videoCodec =
+    String(video.codec_name || '')
+      .toLowerCase();
+
+  const audioCodec =
+    String(audio.codec_name || '')
+      .toLowerCase();
+
+  const pixelFormat =
+    String(video.pix_fmt || '')
+      .toLowerCase();
+
+  return (
+    videoCodec === 'h264' &&
+    audioCodec === 'aac' &&
+    (
+      pixelFormat === 'yuv420p' ||
+      pixelFormat === 'yuvj420p'
+    )
+  );
+}
+
+/* =========================================================
+   YouTube / Threads / TikTok Disabled
 ========================================================= */
 
 function rejectYouTube(res) {
@@ -324,6 +390,13 @@ function rejectThreads(res) {
   return res.status(503).json({
     error:
       'Threads 目前暫不可用，後端功能尚未完成。'
+  });
+}
+
+function rejectTikTok(res) {
+  return res.status(503).json({
+    error:
+      'TikTok 目前暫不由 LinkGrab 處理，請使用 TikTok 本身提供的下載功能。'
   });
 }
 
@@ -345,7 +418,7 @@ app.get('/api/hello', (req, res) => {
       youtube: false,
       instagram: true,
       facebook: true,
-      tiktok: true,
+      tiktok: false,
       twitter: true,
       vimeo: true,
       soundcloud: true,
@@ -397,9 +470,6 @@ app.post('/api/search', async (req, res) => {
     });
   }
 
-  /*
-   * YouTube 搜尋暫停
-   */
   if (platform.includes('youtube')) {
     return res.status(503).json({
       error:
@@ -407,9 +477,6 @@ app.post('/api/search', async (req, res) => {
     });
   }
 
-  /*
-   * SoundCloud 搜尋
-   */
   if (
     platform.includes('soundcloud') ||
     platform.includes('sound')
@@ -433,20 +500,25 @@ app.post('/api/search', async (req, res) => {
           .filter(Boolean)
           .map((item) => ({
             id: item.id || '',
+
             url:
               item.webpage_url ||
               item.url ||
               '',
+
             title:
               item.title ||
               '未命名',
+
             thumbnail:
               item.thumbnail ||
               '',
+
             uploader:
               item.uploader ||
               item.channel ||
               '',
+
             duration:
               item.duration ||
               0
@@ -455,6 +527,7 @@ app.post('/api/search', async (req, res) => {
       return res.json({
         results
       });
+
     } catch (e) {
       return res.status(500).json({
         error:
@@ -494,23 +567,18 @@ app.post('/api/info', async (req, res) => {
   const platform =
     platformOf(url);
 
-  /*
-   * YouTube
-   */
   if (platform === 'YouTube') {
     return rejectYouTube(res);
   }
 
-  /*
-   * Threads
-   */
   if (platform === 'Threads') {
     return rejectThreads(res);
   }
 
-  /*
-   * Unknown
-   */
+  if (platform === 'TikTok') {
+    return rejectTikTok(res);
+  }
+
   if (platform === 'Unknown') {
     return res.status(400).json({
       error:
@@ -532,6 +600,10 @@ app.post('/api/info', async (req, res) => {
         '-J',
         '--no-warnings',
         '--no-playlist',
+
+        /*
+         * 不下載，只取得資訊
+         */
         url
       ],
       90 * 1000
@@ -568,6 +640,7 @@ app.post('/api/info', async (req, res) => {
 
       platform
     });
+
   } catch (e) {
     res.status(500).json({
       error:
@@ -611,23 +684,18 @@ app.post('/api/download', async (req, res) => {
   const platform =
     platformOf(url);
 
-  /*
-   * YouTube
-   */
   if (platform === 'YouTube') {
     return rejectYouTube(res);
   }
 
-  /*
-   * Threads
-   */
   if (platform === 'Threads') {
     return rejectThreads(res);
   }
 
-  /*
-   * Unknown
-   */
+  if (platform === 'TikTok') {
+    return rejectTikTok(res);
+  }
+
   if (platform === 'Unknown') {
     return res.status(400).json({
       error:
@@ -639,6 +707,20 @@ app.post('/api/download', async (req, res) => {
     return res.status(500).json({
       error:
         '伺服器尚未準備 yt-dlp'
+    });
+  }
+
+  if (!fs.existsSync(FFMPEG)) {
+    return res.status(500).json({
+      error:
+        '伺服器尚未準備 FFmpeg'
+    });
+  }
+
+  if (!fs.existsSync(FFPROBE)) {
+    return res.status(500).json({
+      error:
+        '伺服器尚未準備 FFprobe'
     });
   }
 
@@ -665,10 +747,21 @@ app.post('/api/download', async (req, res) => {
     '--no-warnings',
     '--no-playlist',
     '--newline',
+
     '--retries',
     '2',
+
     '--fragment-retries',
     '2',
+
+    '--file-access-retries',
+    '2',
+
+    /*
+     * 讓 yt-dlp 自己處理重試
+     */
+    '--socket-timeout',
+    '30',
 
     '-o',
     template
@@ -694,18 +787,30 @@ app.post('/api/download', async (req, res) => {
           : 480;
 
     /*
-     * 優先 H.264 + AAC。
+     * 先盡可能取得 H.264 + AAC。
      *
-     * 這對 Instagram、
-     * Facebook、TikTok、
-     * Vimeo 等網頁影片比較友善。
+     * Instagram 有時候會提供：
+     * - H.264
+     * - AV1
+     * - VP9
+     * - AAC
+     * - Opus
      *
-     * 如果平台沒有 H.264/AAC，
-     * 才退回一般影片＋音訊。
+     * 不管最後拿到什麼，
+     * 後面都會再次檢查。
      */
+
     args.push(
       '-f',
-      `bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}]+ba/b[ext=mp4]/b`,
+      [
+        `bv*[height<=${height}][vcodec^=avc1][ext=mp4]+ba[acodec^=mp4a][ext=m4a]`,
+        `bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]`,
+        `bv*[height<=${height}][vcodec^=avc1]+ba`,
+        `bv*[height<=${height}]+ba`,
+        `b[height<=${height}][ext=mp4]`,
+        `b[height<=${height}]`,
+        `b`
+      ].join('/'),
 
       '--merge-output-format',
       'mp4'
@@ -740,6 +845,10 @@ app.post('/api/download', async (req, res) => {
       12 * 60 * 1000
     );
 
+    /* ===================================================
+       找輸出檔案
+    =================================================== */
+
     let outputs =
       findOutput(
         jobDir,
@@ -756,10 +865,11 @@ app.post('/api/download', async (req, res) => {
       outputs[0];
 
     /* ===================================================
-       MP4 Compatibility Check
+       MP4 Compatibility
     =================================================== */
 
     if (format === 'mp4') {
+
       const hasVideoAudio =
         await mediaHasVideoAndAudio(
           target
@@ -772,21 +882,31 @@ app.post('/api/download', async (req, res) => {
       }
 
       /*
-       * 如果不是 H.264 + AAC，
-       * 使用 FFmpeg 重新編碼。
+       * 不管來源平台是：
        *
-       * 不只是改副檔名。
+       * H.264
+       * VP9
+       * AV1
+       * HEVC
+       * Opus
+       * Vorbis
+       *
+       * 只要不是瀏覽器友善的
+       * H.264 + AAC，
+       * 就重新轉碼。
        */
+
       const compatible =
         await mediaIsCompatibleMp4(
           target
         );
 
       if (!compatible) {
+
         const converted =
           path.join(
             jobDir,
-            `${requestedName}.compatible.mp4`
+            `${requestedName}.converted.mp4`
           );
 
         await convertToCompatibleMp4(
@@ -795,23 +915,47 @@ app.post('/api/download', async (req, res) => {
         );
 
         /*
-         * 確認轉碼後真的可用
+         * 再檢查一次
          */
         const convertedOk =
-          await mediaIsCompatibleMp4(
+          await validateMp4(
             converted
           );
 
         if (!convertedOk) {
           throw new Error(
-            'MP4 轉碼完成，但影片格式檢查失敗'
+            'MP4 轉碼完成，但 H.264 + AAC 格式檢查失敗'
           );
         }
 
-        /*
-         * 使用轉碼後檔案
-         */
         target = converted;
+      }
+
+      /*
+       * 最後再確認一次檔案真的存在
+       */
+      if (
+        !fs.existsSync(target) ||
+        fs.statSync(target).size === 0
+      ) {
+        throw new Error(
+          'MP4 檔案建立失敗'
+        );
+      }
+    }
+
+    /* ===================================================
+       MP3 Validation
+    =================================================== */
+
+    if (format === 'mp3') {
+      if (
+        !fs.existsSync(target) ||
+        fs.statSync(target).size === 0
+      ) {
+        throw new Error(
+          'MP3 檔案建立失敗'
+        );
       }
     }
 
@@ -834,10 +978,15 @@ app.post('/api/download', async (req, res) => {
         : 'audio/mpeg'
     );
 
+    res.setHeader(
+      'Cache-Control',
+      'no-store'
+    );
+
     res.download(
       target,
       filename,
-      () => {
+      (err) => {
         fs.rm(
           jobDir,
           {
@@ -846,10 +995,18 @@ app.post('/api/download', async (req, res) => {
           },
           () => {}
         );
+
+        if (err && !res.headersSent) {
+          res.status(500).json({
+            error:
+              `傳送檔案失敗：${err.message}`
+          });
+        }
       }
     );
 
   } catch (e) {
+
     fs.rm(
       jobDir,
       {
