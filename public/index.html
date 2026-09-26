@@ -160,7 +160,7 @@
     }
 
     /* =========================
-       Platform bar
+       Platform
     ========================= */
 
     .platform-card {
@@ -220,7 +220,7 @@
     }
 
     /* =========================
-       Download card
+       Download Card
     ========================= */
 
     .download-card {
@@ -243,10 +243,14 @@
       font-size: 14px;
     }
 
+    /* =========================
+       URL
+    ========================= */
+
     .url-row {
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 12px;
+      grid-template-columns: 1fr auto auto;
+      gap: 9px;
     }
 
     .url-input {
@@ -302,13 +306,43 @@
       transform: none;
     }
 
+    .paste-btn {
+      height: 52px;
+      border: 1px solid #d1d5db;
+      border-radius: 14px;
+      padding: 0 16px;
+      background: white;
+      color: #111827;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .paste-btn:hover {
+      background: #f9fafb;
+    }
+
+    .detected-platform {
+      display: none;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .detected-platform.show {
+      display: block;
+    }
+
+    .detected-platform strong {
+      color: #111827;
+    }
+
     /* =========================
        Options
     ========================= */
 
     .options {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 14px;
       margin-top: 18px;
     }
@@ -337,6 +371,59 @@
       background: white;
       padding: 0 11px;
       outline: none;
+    }
+
+    /* =========================
+       Download Progress
+    ========================= */
+
+    .progress-card {
+      display: none;
+      margin-top: 18px;
+      padding: 15px;
+      border: 1px solid #e5e7eb;
+      border-radius: 15px;
+      background: #fafafa;
+    }
+
+    .progress-card.show {
+      display: block;
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 9px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .progress-percent {
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e5e7eb;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: #111827;
+      transition: width 0.18s ease;
+    }
+
+    .progress-info {
+      margin-top: 8px;
+      color: #9ca3af;
+      font-size: 11px;
     }
 
     /* =========================
@@ -423,6 +510,100 @@
 
     .secondary-btn:hover {
       background: #f9fafb;
+    }
+
+    /* =========================
+       Recent Downloads
+    ========================= */
+
+    .recent-card {
+      display: none;
+      margin-top: 20px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 28px rgba(15, 23, 42, 0.04);
+    }
+
+    .recent-card.show {
+      display: block;
+    }
+
+    .recent-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .recent-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .recent-clear {
+      border: 0;
+      background: transparent;
+      color: #6b7280;
+      font-size: 12px;
+      padding: 5px;
+    }
+
+    .recent-clear:hover {
+      color: #111827;
+    }
+
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .recent-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      padding: 11px 12px;
+      border: 1px solid #eef0f3;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    .recent-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111827;
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .recent-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .recent-name {
+      font-size: 13px;
+      font-weight: 750;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recent-meta {
+      margin-top: 3px;
+      color: #9ca3af;
+      font-size: 11px;
     }
 
     /* =========================
@@ -589,7 +770,8 @@
         font-size: 16px;
       }
 
-      .primary-btn {
+      .primary-btn,
+      .paste-btn {
         width: 100%;
         height: 50px;
       }
@@ -624,6 +806,15 @@
 
       .secondary-btn {
         flex: 1;
+      }
+
+      .recent-card {
+        padding: 16px;
+        border-radius: 18px;
+      }
+
+      .recent-item {
+        padding: 10px;
       }
 
       .footer {
@@ -690,9 +881,9 @@
             Facebook
           </div>
 
-          <div class="platform">
+          <div class="platform disabled">
             <span class="dot"></span>
-            TikTok
+            TikTok 暫不支援
           </div>
 
           <div class="platform">
@@ -712,7 +903,7 @@
 
           <div class="platform testing">
             <span class="dot"></span>
-            Threads
+            Threads 測試中
           </div>
 
           <div class="platform disabled">
@@ -732,6 +923,7 @@
         </p>
 
         <div class="url-row">
+
           <input
             id="urlInput"
             class="url-input"
@@ -743,10 +935,25 @@
             placeholder="https://..."
           />
 
-          <button id="analyzeBtn" class="primary-btn">
+          <button
+            id="pasteBtn"
+            class="paste-btn"
+            type="button"
+          >
+            📋 貼上
+          </button>
+
+          <button
+            id="analyzeBtn"
+            class="primary-btn"
+            type="button"
+          >
             分析網址
           </button>
+
         </div>
+
+        <div id="detectedPlatform" class="detected-platform"></div>
 
         <div id="loading" class="loading">
           <span class="spinner"></span>
@@ -770,7 +977,7 @@
             <label for="qualitySelect">影片品質</label>
 
             <select id="qualitySelect">
-              <option value="high">高畫質 — 最多 1080p</option>
+              <option value="high">自動最高 — 最多 1080p</option>
               <option value="medium">中畫質 — 最多 720p</option>
               <option value="low">低畫質 — 最多 480p</option>
             </select>
@@ -789,6 +996,34 @@
 
         </div>
 
+        <div id="progressCard" class="progress-card">
+
+          <div class="progress-top">
+            <span id="progressText">正在下載檔案…</span>
+            <span
+              id="progressPercent"
+              class="progress-percent"
+            >
+              0%
+            </span>
+          </div>
+
+          <div class="progress-track">
+            <div
+              id="progressBar"
+              class="progress-bar"
+            ></div>
+          </div>
+
+          <div
+            id="progressInfo"
+            class="progress-info"
+          >
+            正在等待伺服器資料…
+          </div>
+
+        </div>
+
         <div id="result" class="result">
 
           <div class="result-inner">
@@ -801,15 +1036,24 @@
 
             <div class="result-info">
 
-              <div id="resultPlatform" class="result-platform">
+              <div
+                id="resultPlatform"
+                class="result-platform"
+              >
                 Platform
               </div>
 
-              <h3 id="resultTitle" class="result-title">
+              <h3
+                id="resultTitle"
+                class="result-title"
+              >
                 未命名影片
               </h3>
 
-              <div id="resultMeta" class="result-meta"></div>
+              <div
+                id="resultMeta"
+                class="result-meta"
+              ></div>
 
               <div class="download-actions">
 
@@ -839,6 +1083,32 @@
 
       </section>
 
+      <section
+        id="recentCard"
+        class="recent-card"
+      >
+
+        <div class="recent-header">
+          <h2 class="recent-title">
+            🕘 最近下載
+          </h2>
+
+          <button
+            id="recentClearBtn"
+            class="recent-clear"
+            type="button"
+          >
+            清除紀錄
+          </button>
+        </div>
+
+        <div
+          id="recentList"
+          class="recent-list"
+        ></div>
+
+      </section>
+
     </main>
 
     <footer class="footer">
@@ -851,9 +1121,11 @@
     (() => {
       "use strict";
 
-      const $ = (id) => document.getElementById(id);
+      const $ = (id) =>
+        document.getElementById(id);
 
       const urlInput = $("urlInput");
+      const pasteBtn = $("pasteBtn");
       const analyzeBtn = $("analyzeBtn");
       const downloadBtn = $("downloadBtn");
       const clearBtn = $("clearBtn");
@@ -863,24 +1135,61 @@
       const qualityOption = $("qualityOption");
       const filenameInput = $("filenameInput");
 
+      const detectedPlatform =
+        $("detectedPlatform");
+
       const loading = $("loading");
       const loadingText = $("loadingText");
       const message = $("message");
 
+      const progressCard =
+        $("progressCard");
+      const progressBar =
+        $("progressBar");
+      const progressPercent =
+        $("progressPercent");
+      const progressText =
+        $("progressText");
+      const progressInfo =
+        $("progressInfo");
+
       const result = $("result");
       const thumbnail = $("thumbnail");
-      const resultPlatform = $("resultPlatform");
-      const resultTitle = $("resultTitle");
-      const resultMeta = $("resultMeta");
+      const resultPlatform =
+        $("resultPlatform");
+      const resultTitle =
+        $("resultTitle");
+      const resultMeta =
+        $("resultMeta");
+
+      const recentCard =
+        $("recentCard");
+      const recentList =
+        $("recentList");
+      const recentClearBtn =
+        $("recentClearBtn");
 
       let currentInfo = null;
       let busy = false;
+      let analyzeTimer = null;
 
       const API_TIMEOUT = 120000;
+      const RECENT_KEY =
+        "linkgrab_recent_downloads";
+      const MAX_RECENT = 10;
 
-      function showMessage(text, type = "error") {
+      /* =========================
+         Message
+      ========================= */
+
+      function showMessage(
+        text,
+        type = "error"
+      ) {
         message.textContent = text;
-        message.className = `message show ${type}`;
+
+        message.className =
+          `message show ${type}`;
       }
 
       function hideMessage() {
@@ -888,31 +1197,108 @@
         message.className = "message";
       }
 
-      function setLoading(active, text = "處理中…") {
+      /* =========================
+         Loading
+      ========================= */
+
+      function setLoading(
+        active,
+        text = "處理中…"
+      ) {
         loadingText.textContent = text;
-        loading.classList.toggle("show", active);
+
+        loading.classList.toggle(
+          "show",
+          active
+        );
 
         analyzeBtn.disabled = active;
+        pasteBtn.disabled = active;
         downloadBtn.disabled = active;
 
         busy = active;
       }
 
+      /* =========================
+         Progress
+      ========================= */
+
+      function resetProgress() {
+        progressBar.style.width = "0%";
+        progressPercent.textContent = "0%";
+
+        progressText.textContent =
+          "正在下載檔案…";
+
+        progressInfo.textContent =
+          "正在等待伺服器資料…";
+
+        progressCard.classList.remove(
+          "show"
+        );
+      }
+
+      function showProgress() {
+        progressCard.classList.add(
+          "show"
+        );
+      }
+
+      function updateProgress(
+        percent,
+        received,
+        total
+      ) {
+        const safePercent =
+          Math.max(
+            0,
+            Math.min(
+              100,
+              Number(percent) || 0
+            )
+          );
+
+        progressBar.style.width =
+          `${safePercent}%`;
+
+        progressPercent.textContent =
+          `${Math.round(safePercent)}%`;
+
+        if (total > 0) {
+          progressInfo.textContent =
+            `${formatBytes(received)} / ${formatBytes(total)}`;
+        } else {
+          progressInfo.textContent =
+            `已接收 ${formatBytes(received)}`;
+        }
+      }
+
+      /* =========================
+         Result
+      ========================= */
+
       function hideResult() {
-        result.classList.remove("show");
+        result.classList.remove(
+          "show"
+        );
+
         currentInfo = null;
       }
 
       function showResult(data) {
         currentInfo = data;
 
-        result.classList.add("show");
+        result.classList.add(
+          "show"
+        );
 
         resultPlatform.textContent =
-          data.platform || "未知平台";
+          data.platform ||
+          "未知平台";
 
         resultTitle.textContent =
-          data.title || "未命名影片";
+          data.title ||
+          "未命名影片";
 
         const meta = [];
 
@@ -921,161 +1307,650 @@
         }
 
         if (data.duration) {
-          meta.push(formatDuration(data.duration));
+          meta.push(
+            formatDuration(
+              data.duration
+            )
+          );
         }
 
         if (data.view_count) {
-          meta.push(`${Number(data.view_count).toLocaleString()} 次觀看`);
+          meta.push(
+            `${Number(
+              data.view_count
+            ).toLocaleString()} 次觀看`
+          );
         }
 
         resultMeta.textContent =
-          meta.length ? meta.join(" · ") : "已取得影片資訊";
+          meta.length
+            ? meta.join(" · ")
+            : "已取得影片資訊";
 
         if (data.thumbnail) {
-          thumbnail.src = data.thumbnail;
-          thumbnail.style.display = "block";
+          thumbnail.src =
+            data.thumbnail;
+
+          thumbnail.style.display =
+            "block";
         } else {
-          thumbnail.removeAttribute("src");
-          thumbnail.style.display = "none";
+          thumbnail.removeAttribute(
+            "src"
+          );
+
+          thumbnail.style.display =
+            "none";
         }
 
-        if (!filenameInput.value.trim()) {
-          filenameInput.value = safeName(data.title || "LinkGrab");
+        if (
+          !filenameInput.value.trim()
+        ) {
+          filenameInput.value =
+            safeName(
+              data.title ||
+              "LinkGrab"
+            );
         }
       }
 
-      function formatDuration(seconds) {
-        seconds = Number(seconds) || 0;
+      /* =========================
+         Helpers
+      ========================= */
 
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = Math.floor(seconds % 60);
+      function formatDuration(
+        seconds
+      ) {
+        seconds =
+          Number(seconds) || 0;
+
+        const h =
+          Math.floor(
+            seconds / 3600
+          );
+
+        const m =
+          Math.floor(
+            (seconds % 3600) /
+              60
+          );
+
+        const s =
+          Math.floor(
+            seconds % 60
+          );
 
         if (h > 0) {
-          return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+          return (
+            `${h}:` +
+            `${String(m).padStart(
+              2,
+              "0"
+            )}:` +
+            `${String(s).padStart(
+              2,
+              "0"
+            )}`
+          );
         }
 
-        return `${m}:${String(s).padStart(2, "0")}`;
+        return (
+          `${m}:` +
+          `${String(s).padStart(
+            2,
+            "0"
+          )}`
+        );
+      }
+
+      function formatBytes(
+        bytes
+      ) {
+        const value =
+          Number(bytes) || 0;
+
+        if (value < 1024) {
+          return `${value} B`;
+        }
+
+        if (
+          value <
+          1024 * 1024
+        ) {
+          return `${(
+            value / 1024
+          ).toFixed(1)} KB`;
+        }
+
+        if (
+          value <
+          1024 *
+            1024 *
+            1024
+        ) {
+          return `${(
+            value /
+            1024 /
+            1024
+          ).toFixed(1)} MB`;
+        }
+
+        return `${(
+          value /
+          1024 /
+          1024 /
+          1024
+        ).toFixed(2)} GB`;
       }
 
       function safeName(name) {
-        return String(name || "LinkGrab")
-          .replace(/[\\/:*?"<>|]/g, "_")
-          .replace(/\s+/g, " ")
+        return String(
+          name ||
+            "LinkGrab"
+        )
+          .replace(
+            /[\\/:*?"<>|]/g,
+            "_"
+          )
+          .replace(
+            /\s+/g,
+            " "
+          )
           .trim()
-          .slice(0, 100) || "LinkGrab";
+          .slice(
+            0,
+            100
+          ) || "LinkGrab";
       }
 
-      function isYouTube(url) {
-        const value = String(url).toLowerCase();
+      function normalizeUrl(
+        value
+      ) {
+        return String(
+          value || ""
+        ).trim();
+      }
 
-        return (
-          value.includes("youtube.com") ||
-          value.includes("youtu.be")
+      /* =========================
+         Platform Detection
+      ========================= */
+
+      function getPlatform(
+        url
+      ) {
+        const value =
+          normalizeUrl(
+            url
+          ).toLowerCase();
+
+        if (
+          value.includes(
+            "instagram.com"
+          )
+        ) {
+          return "Instagram";
+        }
+
+        if (
+          value.includes(
+            "facebook.com"
+          ) ||
+          value.includes(
+            "fb.watch"
+          )
+        ) {
+          return "Facebook";
+        }
+
+        if (
+          value.includes(
+            "tiktok.com"
+          )
+        ) {
+          return "TikTok";
+        }
+
+        if (
+          value.includes(
+            "twitter.com"
+          ) ||
+          value.includes(
+            "x.com"
+          )
+        ) {
+          return "X / Twitter";
+        }
+
+        if (
+          value.includes(
+            "vimeo.com"
+          )
+        ) {
+          return "Vimeo";
+        }
+
+        if (
+          value.includes(
+            "soundcloud.com"
+          )
+        ) {
+          return "SoundCloud";
+        }
+
+        if (
+          value.includes(
+            "threads.net"
+          ) ||
+          value.includes(
+            "threads.com"
+          )
+        ) {
+          return "Threads";
+        }
+
+        if (
+          value.includes(
+            "youtube.com"
+          ) ||
+          value.includes(
+            "youtu.be"
+          )
+        ) {
+          return "YouTube";
+        }
+
+        return null;
+      }
+
+      function updateDetectedPlatform() {
+        const url =
+          normalizeUrl(
+            urlInput.value
+          );
+
+        if (!url) {
+          detectedPlatform.textContent =
+            "";
+
+          detectedPlatform.classList.remove(
+            "show"
+          );
+
+          return;
+        }
+
+        const platform =
+          getPlatform(url);
+
+        if (!platform) {
+          detectedPlatform.innerHTML =
+            "平台：<strong>尚未辨識</strong>";
+
+          detectedPlatform.classList.add(
+            "show"
+          );
+
+          return;
+        }
+
+        let label =
+          `平台：<strong>${platform}</strong>`;
+
+        if (
+          platform ===
+          "TikTok"
+        ) {
+          label +=
+            " · LinkGrab 暫不處理";
+        }
+
+        if (
+          platform ===
+          "Threads"
+        ) {
+          label +=
+            " · 測試中";
+        }
+
+        if (
+          platform ===
+          "YouTube"
+        ) {
+          label +=
+            " · 暫不可用";
+        }
+
+        detectedPlatform.innerHTML =
+          label;
+
+        detectedPlatform.classList.add(
+          "show"
         );
       }
 
-      function isSupportedPlatform(url) {
-        const value = String(url).toLowerCase();
-
+      function isYouTube(
+        url
+      ) {
         return (
-          value.includes("instagram.com") ||
-          value.includes("facebook.com") ||
-          value.includes("fb.watch") ||
-          value.includes("tiktok.com") ||
-          value.includes("twitter.com") ||
-          value.includes("x.com") ||
-          value.includes("vimeo.com") ||
-          value.includes("soundcloud.com") ||
-          value.includes("threads.net") ||
-          value.includes("threads.com")
+          getPlatform(
+            url
+          ) ===
+          "YouTube"
         );
       }
 
-      async function fetchWithTimeout(url, options = {}) {
-        const controller = new AbortController();
+      function isSupportedPlatform(
+        url
+      ) {
+        const platform =
+          getPlatform(url);
 
-        const timer = setTimeout(() => {
-          controller.abort();
-        }, API_TIMEOUT);
+        return [
+          "Instagram",
+          "Facebook",
+          "X / Twitter",
+          "Vimeo",
+          "SoundCloud"
+        ].includes(
+          platform
+        );
+      }
+
+      /* =========================
+         Clipboard
+      ========================= */
+
+      async function pasteUrl() {
+        if (busy) return;
 
         try {
-          return await fetch(url, {
-            ...options,
-            signal: controller.signal
-          });
-        } finally {
-          clearTimeout(timer);
+          let text = "";
+
+          if (
+            navigator.clipboard &&
+            navigator.clipboard.readText
+          ) {
+            text =
+              await navigator.clipboard.readText();
+          } else {
+            throw new Error(
+              "瀏覽器不支援剪貼簿讀取"
+            );
+          }
+
+          text =
+            normalizeUrl(text);
+
+          if (!text) {
+            showMessage(
+              "剪貼簿裡沒有網址。",
+              "warning"
+            );
+
+            return;
+          }
+
+          urlInput.value = text;
+
+          updateDetectedPlatform();
+
+          hideMessage();
+          hideResult();
+
+          if (
+            /^https?:\/\//i.test(
+              text
+            )
+          ) {
+            scheduleAutoAnalyze();
+          } else {
+            showMessage(
+              "剪貼簿內容不是完整網址。",
+              "warning"
+            );
+          }
+        } catch {
+          showMessage(
+            "無法讀取剪貼簿。請允許瀏覽器存取剪貼簿，或直接貼上網址。",
+            "warning"
+          );
+
+          urlInput.focus();
         }
       }
 
-      async function readJson(response) {
+      /* =========================
+         Auto Analyze
+      ========================= */
+
+      function scheduleAutoAnalyze() {
+        clearTimeout(
+          analyzeTimer
+        );
+
+        const url =
+          normalizeUrl(
+            urlInput.value
+          );
+
+        if (
+          !url ||
+          !/^https?:\/\//i.test(
+            url
+          )
+        ) {
+          return;
+        }
+
+        const platform =
+          getPlatform(url);
+
+        if (
+          !platform ||
+          platform ===
+            "YouTube" ||
+          platform ===
+            "TikTok" ||
+          platform ===
+            "Threads"
+        ) {
+          return;
+        }
+
+        analyzeTimer =
+          setTimeout(
+            () => {
+              if (
+                !busy &&
+                urlInput.value.trim() ===
+                  url
+              ) {
+                analyze();
+              }
+            },
+            900
+          );
+      }
+
+      /* =========================
+         Network
+      ========================= */
+
+      async function fetchWithTimeout(
+        url,
+        options = {}
+      ) {
+        const controller =
+          new AbortController();
+
+        const timer =
+          setTimeout(
+            () => {
+              controller.abort();
+            },
+            API_TIMEOUT
+          );
+
+        try {
+          return await fetch(
+            url,
+            {
+              ...options,
+              signal:
+                controller.signal
+            }
+          );
+        } finally {
+          clearTimeout(
+            timer
+          );
+        }
+      }
+
+      async function readJson(
+        response
+      ) {
         let data = null;
 
         try {
-          data = await response.json();
+          data =
+            await response.json();
         } catch {
-          throw new Error(`伺服器回應異常（HTTP ${response.status}）`);
+          throw new Error(
+            `伺服器回應異常（HTTP ${response.status}）`
+          );
         }
 
         if (!response.ok) {
           throw new Error(
             data?.error ||
-            `伺服器錯誤（HTTP ${response.status}）`
+              `伺服器錯誤（HTTP ${response.status}）`
           );
         }
 
         return data;
       }
 
+      /* =========================
+         Analyze
+      ========================= */
+
       async function analyze() {
         if (busy) return;
 
-        const url = urlInput.value.trim();
+        const url =
+          normalizeUrl(
+            urlInput.value
+          );
 
         hideMessage();
         hideResult();
+        resetProgress();
 
         if (!url) {
-          showMessage("請先貼上網址。");
+          showMessage(
+            "請先貼上網址。"
+          );
+
           urlInput.focus();
+
           return;
         }
 
-        if (!/^https?:\/\//i.test(url)) {
-          showMessage("請輸入完整的 http:// 或 https:// 網址。");
+        if (
+          !/^https?:\/\//i.test(
+            url
+          )
+        ) {
+          showMessage(
+            "請輸入完整的 http:// 或 https:// 網址。"
+          );
+
           urlInput.focus();
+
           return;
         }
 
-        if (isYouTube(url)) {
+        const platform =
+          getPlatform(url);
+
+        updateDetectedPlatform();
+
+        if (
+          platform ===
+          "YouTube"
+        ) {
           showMessage(
             "YouTube 目前暫不可用。其他支援平台可以正常使用。",
             "warning"
           );
+
           return;
         }
 
-        if (!isSupportedPlatform(url)) {
+        if (
+          platform ===
+          "TikTok"
+        ) {
+          showMessage(
+            "TikTok 目前不由 LinkGrab 處理，請使用 TikTok 本身提供的下載功能。",
+            "warning"
+          );
+
+          return;
+        }
+
+        if (
+          platform ===
+          "Threads"
+        ) {
+          showMessage(
+            "Threads 目前仍在測試中，暫時無法分析。",
+            "warning"
+          );
+
+          return;
+        }
+
+        if (
+          !isSupportedPlatform(
+            url
+          )
+        ) {
           showMessage(
             "目前這個網址不在 LinkGrab 的支援平台清單中。",
             "warning"
           );
+
           return;
         }
 
-        setLoading(true, "正在分析網址…");
+        setLoading(
+          true,
+          "正在分析網址…"
+        );
 
         try {
-          const response = await fetchWithTimeout("/api/info", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ url })
-          });
+          const response =
+            await fetchWithTimeout(
+              "/api/info",
+              {
+                method:
+                  "POST",
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+                body:
+                  JSON.stringify({
+                    url
+                  })
+              }
+            );
 
-          const data = await readJson(response);
+          const data =
+            await readJson(
+              response
+            );
 
           showResult(data);
 
@@ -1084,13 +1959,17 @@
             "success"
           );
         } catch (error) {
-          if (error.name === "AbortError") {
+          if (
+            error.name ===
+            "AbortError"
+          ) {
             showMessage(
               "分析等待時間過長，請稍後再試。"
             );
           } else {
             showMessage(
-              error.message || "分析失敗，請稍後再試。"
+              error.message ||
+                "分析失敗，請稍後再試。"
             );
           }
         } finally {
@@ -1098,35 +1977,84 @@
         }
       }
 
+      /* =========================
+         Download
+      ========================= */
+
       async function download() {
         if (busy) return;
 
         if (!currentInfo) {
-          showMessage("請先分析網址。");
+          showMessage(
+            "請先分析網址。"
+          );
+
           return;
         }
 
-        const url = urlInput.value.trim();
+        const url =
+          normalizeUrl(
+            urlInput.value
+          );
 
         if (!url) {
-          showMessage("網址不存在，請重新分析。");
+          showMessage(
+            "網址不存在，請重新分析。"
+          );
+
           return;
         }
 
-        if (isYouTube(url)) {
+        const platform =
+          getPlatform(url);
+
+        if (
+          platform ===
+          "TikTok"
+        ) {
+          showMessage(
+            "TikTok 目前不由 LinkGrab 處理。",
+            "warning"
+          );
+
+          return;
+        }
+
+        if (
+          platform ===
+          "Threads"
+        ) {
+          showMessage(
+            "Threads 目前仍在測試中。",
+            "warning"
+          );
+
+          return;
+        }
+
+        if (
+          isYouTube(url)
+        ) {
           showMessage(
             "YouTube 目前暫不可用。",
             "warning"
           );
+
           return;
         }
 
-        const format = formatSelect.value === "mp3"
-          ? "mp3"
-          : "mp4";
+        const format =
+          formatSelect.value ===
+          "mp3"
+            ? "mp3"
+            : "mp4";
 
         const quality =
-          ["high", "medium", "low"].includes(
+          [
+            "high",
+            "medium",
+            "low"
+          ].includes(
             qualitySelect.value
           )
             ? qualitySelect.value
@@ -1135,11 +2063,13 @@
         const filename =
           safeName(
             filenameInput.value.trim() ||
-            currentInfo.title ||
-            "LinkGrab"
+              currentInfo.title ||
+              "LinkGrab"
           );
 
         hideMessage();
+
+        resetProgress();
 
         setLoading(
           true,
@@ -1148,68 +2078,169 @@
             : "正在製作 MP4，請稍候…"
         );
 
+        showProgress();
+
         try {
-          const response = await fetchWithTimeout(
-            "/api/download",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                url,
-                format,
-                quality,
-                filename
-              })
-            }
-          );
+          const response =
+            await fetchWithTimeout(
+              "/api/download",
+              {
+                method:
+                  "POST",
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+                body:
+                  JSON.stringify({
+                    url,
+                    format,
+                    quality,
+                    filename
+                  })
+              }
+            );
 
           if (!response.ok) {
             let data = null;
 
             try {
-              data = await response.json();
+              data =
+                await response.json();
             } catch {}
 
             throw new Error(
               data?.error ||
-              `下載失敗（HTTP ${response.status}）`
+                `下載失敗（HTTP ${response.status}）`
             );
           }
 
-          const blob = await response.blob();
+          if (
+            !response.body
+          ) {
+            const blob =
+              await response.blob();
 
-          if (!blob || blob.size === 0) {
-            throw new Error("伺服器沒有回傳檔案。");
+            await finishDownload(
+              blob,
+              filename,
+              format,
+              platform
+            );
+
+            return;
           }
 
-          const objectUrl = URL.createObjectURL(blob);
+          const reader =
+            response.body.getReader();
 
-          const link = document.createElement("a");
-          link.href = objectUrl;
-          link.download = `${filename}.${format}`;
-          document.body.appendChild(link);
+          const contentLength =
+            Number(
+              response.headers.get(
+                "Content-Length"
+              )
+            ) || 0;
 
-          link.click();
-          link.remove();
+          const chunks = [];
 
-          setTimeout(() => {
-            URL.revokeObjectURL(objectUrl);
-          }, 30000);
+          let received = 0;
 
-          showMessage(
-            "下載已開始。",
-            "success"
+          while (true) {
+            const {
+              done,
+              value
+            } =
+              await reader.read();
+
+            if (done) {
+              break;
+            }
+
+            if (value) {
+              chunks.push(value);
+
+              received +=
+                value.byteLength;
+
+              let percent = 0;
+
+              if (
+                contentLength >
+                0
+              ) {
+                percent =
+                  (received /
+                    contentLength) *
+                  100;
+
+                updateProgress(
+                  percent,
+                  received,
+                  contentLength
+                );
+              } else {
+                /*
+                 * Render / Node 後端可能沒有
+                 * Content-Length。
+                 * 此時顯示最多 95%，
+                 * 等完整收到檔案後才跳到 100%。
+                 */
+                percent =
+                  Math.min(
+                    95,
+                    5 +
+                      Math.log10(
+                        Math.max(
+                          10,
+                          received
+                        )
+                      ) *
+                        18
+                  );
+
+                updateProgress(
+                  percent,
+                  received,
+                  0
+                );
+              }
+            }
+          }
+
+          const blob =
+            new Blob(chunks);
+
+          updateProgress(
+            100,
+            blob.size,
+            blob.size
+          );
+
+          progressText.textContent =
+            "下載完成，正在準備檔案…";
+
+          await finishDownload(
+            blob,
+            filename,
+            format,
+            platform
           );
         } catch (error) {
-          if (error.name === "AbortError") {
+          progressCard.classList.remove(
+            "show"
+          );
+
+          if (
+            error.name ===
+            "AbortError"
+          ) {
             showMessage(
               "下載等待時間過長，請稍後再試。"
             );
           } else {
             showMessage(
-              error.message || "下載失敗，請稍後再試。"
+              error.message ||
+                "下載失敗，請稍後再試。"
             );
           }
         } finally {
@@ -1217,8 +2248,94 @@
         }
       }
 
+      async function finishDownload(
+        blob,
+        filename,
+        format,
+        platform
+      ) {
+        if (
+          !blob ||
+          blob.size === 0
+        ) {
+          throw new Error(
+            "伺服器沒有回傳檔案。"
+          );
+        }
+
+        const objectUrl =
+          URL.createObjectURL(
+            blob
+          );
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        link.href =
+          objectUrl;
+
+        link.download =
+          `${filename}.${format}`;
+
+        link.style.display =
+          "none";
+
+        document.body.appendChild(
+          link
+        );
+
+        link.click();
+
+        link.remove();
+
+        setTimeout(
+          () => {
+            URL.revokeObjectURL(
+              objectUrl
+            );
+          },
+          30000
+        );
+
+        saveRecentDownload({
+          name: `${filename}.${format}`,
+          platform:
+            platform ||
+            currentInfo?.platform ||
+            "未知平台",
+          format,
+          time:
+            Date.now()
+        });
+
+        renderRecentDownloads();
+
+        progressText.textContent =
+          "下載完成";
+
+        progressInfo.textContent =
+          `檔案大小：${formatBytes(
+            blob.size
+          )}`;
+
+        showMessage(
+          "下載已開始。",
+          "success"
+        );
+      }
+
+      /* =========================
+         Clear
+      ========================= */
+
       function clearAll() {
         if (busy) return;
+
+        clearTimeout(
+          analyzeTimer
+        );
 
         urlInput.value = "";
         filenameInput.value = "";
@@ -1226,39 +2343,366 @@
         hideMessage();
         hideResult();
 
-        thumbnail.removeAttribute("src");
+        resetProgress();
+
+        thumbnail.removeAttribute(
+          "src"
+        );
+
+        detectedPlatform.textContent =
+          "";
+
+        detectedPlatform.classList.remove(
+          "show"
+        );
 
         urlInput.focus();
       }
 
-      formatSelect.addEventListener("change", () => {
-        const isMp3 = formatSelect.value === "mp3";
+      /* =========================
+         Recent Downloads
+      ========================= */
 
-        qualityOption.style.display =
-          isMp3 ? "none" : "";
-      });
+      function getRecentDownloads() {
+        try {
+          const data =
+            JSON.parse(
+              localStorage.getItem(
+                RECENT_KEY
+              ) || "[]"
+            );
 
-      analyzeBtn.addEventListener("click", analyze);
-
-      downloadBtn.addEventListener("click", download);
-
-      clearBtn.addEventListener("click", clearAll);
-
-      urlInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          analyze();
+          return Array.isArray(
+            data
+          )
+            ? data
+            : [];
+        } catch {
+          return [];
         }
-      });
+      }
 
-      window.addEventListener("pageshow", () => {
-        busy = false;
-        setLoading(false);
-      });
+      function saveRecentDownload(
+        item
+      ) {
+        try {
+          const list =
+            getRecentDownloads();
+
+          const next =
+            [
+              item,
+              ...list
+            ].slice(
+              0,
+              MAX_RECENT
+            );
+
+          localStorage.setItem(
+            RECENT_KEY,
+            JSON.stringify(
+              next
+            )
+          );
+        } catch {
+          /* localStorage 被封鎖時不影響下載 */
+        }
+      }
+
+      function formatRecentTime(
+        timestamp
+      ) {
+        const date =
+          new Date(
+            timestamp
+          );
+
+        if (
+          Number.isNaN(
+            date.getTime()
+          )
+        ) {
+          return "";
+        }
+
+        return date.toLocaleString(
+          "zh-TW",
+          {
+            month: "numeric",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        );
+      }
+
+      function platformShort(
+        platform
+      ) {
+        if (
+          platform ===
+          "Instagram"
+        ) {
+          return "IG";
+        }
+
+        if (
+          platform ===
+          "Facebook"
+        ) {
+          return "FB";
+        }
+
+        if (
+          platform ===
+          "X / Twitter"
+        ) {
+          return "X";
+        }
+
+        if (
+          platform ===
+          "SoundCloud"
+        ) {
+          return "SC";
+        }
+
+        if (
+          platform ===
+          "Vimeo"
+        ) {
+          return "VM";
+        }
+
+        return "LG";
+      }
+
+      function renderRecentDownloads() {
+        const list =
+          getRecentDownloads();
+
+        recentList.innerHTML =
+          "";
+
+        if (
+          !list.length
+        ) {
+          recentCard.classList.remove(
+            "show"
+          );
+
+          return;
+        }
+
+        recentCard.classList.add(
+          "show"
+        );
+
+        list.forEach(
+          (item) => {
+            const row =
+              document.createElement(
+                "div"
+              );
+
+            row.className =
+              "recent-item";
+
+            const icon =
+              document.createElement(
+                "div"
+              );
+
+            icon.className =
+              "recent-icon";
+
+            icon.textContent =
+              platformShort(
+                item.platform
+              );
+
+            const info =
+              document.createElement(
+                "div"
+              );
+
+            info.className =
+              "recent-info";
+
+            const name =
+              document.createElement(
+                "div"
+              );
+
+            name.className =
+              "recent-name";
+
+            name.textContent =
+              item.name ||
+              "LinkGrab";
+
+            const meta =
+              document.createElement(
+                "div"
+              );
+
+            meta.className =
+              "recent-meta";
+
+            meta.textContent =
+              `${item.platform || "未知平台"} · ${
+                String(
+                  item.format ||
+                    ""
+                ).toUpperCase()
+              } · ${formatRecentTime(
+                item.time
+              )}`;
+
+            info.appendChild(
+              name
+            );
+
+            info.appendChild(
+              meta
+            );
+
+            row.appendChild(
+              icon
+            );
+
+            row.appendChild(
+              info
+            );
+
+            recentList.appendChild(
+              row
+            );
+          }
+        );
+      }
+
+      function clearRecentDownloads() {
+        try {
+          localStorage.removeItem(
+            RECENT_KEY
+          );
+        } catch {}
+
+        renderRecentDownloads();
+      }
+
+      /* =========================
+         Events
+      ========================= */
+
+      pasteBtn.addEventListener(
+        "click",
+        pasteUrl
+      );
+
+      analyzeBtn.addEventListener(
+        "click",
+        analyze
+      );
+
+      downloadBtn.addEventListener(
+        "click",
+        download
+      );
+
+      clearBtn.addEventListener(
+        "click",
+        clearAll
+      );
+
+      recentClearBtn.addEventListener(
+        "click",
+        clearRecentDownloads
+      );
+
+      formatSelect.addEventListener(
+        "change",
+        () => {
+          const isMp3 =
+            formatSelect.value ===
+            "mp3";
+
+          qualityOption.style.display =
+            isMp3
+              ? "none"
+              : "";
+        }
+      );
+
+      urlInput.addEventListener(
+        "input",
+        () => {
+          updateDetectedPlatform();
+
+          hideMessage();
+
+          /*
+           * 使用者修改網址後，
+           * 舊分析結果不再視為目前網址的結果。
+           */
+          hideResult();
+
+          clearTimeout(
+            analyzeTimer
+          );
+
+          scheduleAutoAnalyze();
+        }
+      );
+
+      urlInput.addEventListener(
+        "paste",
+        () => {
+          setTimeout(
+            () => {
+              updateDetectedPlatform();
+              scheduleAutoAnalyze();
+            },
+            50
+          );
+        }
+      );
+
+      urlInput.addEventListener(
+        "keydown",
+        (event) => {
+          if (
+            event.key ===
+            "Enter"
+          ) {
+            event.preventDefault();
+
+            clearTimeout(
+              analyzeTimer
+            );
+
+            analyze();
+          }
+        }
+      );
+
+      window.addEventListener(
+        "pageshow",
+        () => {
+          busy = false;
+          setLoading(false);
+          renderRecentDownloads();
+        }
+      );
 
       formatSelect.dispatchEvent(
-        new Event("change")
+        new Event(
+          "change"
+        )
       );
+
+      renderRecentDownloads();
     })();
   </script>
 </body>
