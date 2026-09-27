@@ -26,10 +26,139 @@ app.disable('x-powered-by');
 app.use(express.static(PUBLIC));
 
 /* =========================================================
-   Command Runner
-========================================================= */
+   LinkGrab 1.0.2
+   Provider Registry
+   =========================================================
 
-function run(file, args, timeout = 10 * 60 * 1000) {
+   每個平台可以有自己的設定。
+
+   未來如果要新增平台，只需要在 PROVIDERS
+   加入一個 Provider，不需要重寫 /api/info
+   或 /api/download。
+
+   ========================================================= */
+
+const PROVIDERS = {
+  instagram: {
+    name: 'Instagram',
+    enabled: true,
+    matches(url) {
+      return String(url).toLowerCase().includes('instagram.com');
+    },
+    formatMode: 'standard'
+  },
+
+  facebook: {
+    name: 'Facebook',
+    enabled: true,
+    matches(url) {
+      const u = String(url).toLowerCase();
+
+      return (
+        u.includes('facebook.com') ||
+        u.includes('fb.watch')
+      );
+    },
+    formatMode: 'standard'
+  },
+
+  twitter: {
+    name: 'X / Twitter',
+    enabled: true,
+    matches(url) {
+      const u = String(url).toLowerCase();
+
+      return (
+        u.includes('twitter.com') ||
+        u.includes('x.com')
+      );
+    },
+    formatMode: 'standard'
+  },
+
+  vimeo: {
+    name: 'Vimeo',
+    enabled: true,
+    matches(url) {
+      return String(url).toLowerCase().includes('vimeo.com');
+    },
+    formatMode: 'standard'
+  },
+
+  soundcloud: {
+    name: 'SoundCloud',
+    enabled: true,
+    matches(url) {
+      return String(url).toLowerCase().includes('soundcloud.com');
+    },
+    formatMode: 'standard'
+  },
+
+  /*
+   * =======================================================
+   * Threads Provider
+   * =======================================================
+   *
+   * 目前只接受 threads.com
+   *
+   * Threads 使用 yt-dlp-threads extractor plugin。
+   *
+   * plugin 沒有被寫死在下載流程裡。
+   * 只要 plugin 正常載入，yt-dlp 會自動使用 ThreadsIE。
+   *
+   * 未來如果 Threads plugin 壞掉，可以單獨停用：
+   *
+   * enabled: false
+   *
+   * 不會影響其他平台。
+   *
+   * =======================================================
+   */
+
+  threads: {
+    name: 'Threads',
+    enabled: true,
+
+    matches(url) {
+      return String(url)
+        .toLowerCase()
+        .includes('threads.com');
+    },
+
+    formatMode: 'threads'
+  },
+
+  /*
+   * TikTok
+   *
+   * 目前 LinkGrab 不處理 TikTok。
+   * TikTok 本身已經提供下載功能，因此保持停用。
+   */
+
+  tiktok: {
+    name: 'TikTok',
+    enabled: false,
+
+    matches(url) {
+      return String(url)
+        .toLowerCase()
+        .includes('tiktok.com');
+    },
+
+    formatMode: 'standard'
+  }
+};
+
+
+/* =========================================================
+   Command Runner
+   ========================================================= */
+
+function run(
+  file,
+  args,
+  timeout = 10 * 60 * 1000
+) {
   return new Promise((resolve, reject) => {
     execFile(
       file,
@@ -60,9 +189,10 @@ function run(file, args, timeout = 10 * 60 * 1000) {
   });
 }
 
+
 /* =========================================================
    Platform Detection
-========================================================= */
+   ========================================================= */
 
 function isYouTube(url) {
   const u = String(url).toLowerCase();
@@ -73,20 +203,6 @@ function isYouTube(url) {
   );
 }
 
-function isThreads(url) {
-  const u = String(url).toLowerCase();
-
-  return (
-    u.includes('threads.net') ||
-    u.includes('threads.com')
-  );
-}
-
-function isTikTok(url) {
-  return String(url)
-    .toLowerCase()
-    .includes('tiktok.com');
-}
 
 function platformOf(url) {
   const u = String(url).toLowerCase();
@@ -95,46 +211,53 @@ function platformOf(url) {
     return 'YouTube';
   }
 
-  if (
-    u.includes('facebook.com') ||
-    u.includes('fb.watch')
-  ) {
-    return 'Facebook';
-  }
-
-  if (u.includes('instagram.com')) {
-    return 'Instagram';
-  }
-
-  if (isThreads(u)) {
-    return 'Threads';
-  }
-
-  if (isTikTok(u)) {
-    return 'TikTok';
-  }
-
-  if (
-    u.includes('twitter.com') ||
-    u.includes('x.com')
-  ) {
-    return 'X / Twitter';
-  }
-
-  if (u.includes('vimeo.com')) {
-    return 'Vimeo';
-  }
-
-  if (u.includes('soundcloud.com')) {
-    return 'SoundCloud';
+  for (const provider of Object.values(PROVIDERS)) {
+    try {
+      if (provider.matches(u)) {
+        return provider.name;
+      }
+    } catch {
+      // Ignore provider detection errors
+    }
   }
 
   return 'Unknown';
 }
 
+
+function getProvider(url) {
+  const u = String(url).toLowerCase();
+
+  for (const [id, provider] of Object.entries(PROVIDERS)) {
+    try {
+      if (provider.matches(u)) {
+        return {
+          id,
+          ...provider
+        };
+      }
+    } catch {
+      // Ignore provider detection errors
+    }
+  }
+
+  return null;
+}
+
+
+function providerIsEnabled(url) {
+  const provider = getProvider(url);
+
+  return !!(
+    provider &&
+    provider.enabled
+  );
+}
+
+
 /* =========================================================
-   Filename
-========================================================= */
+   Safe Filename
+   ========================================================= */
 
 function safeName(name) {
   return String(name || 'LinkGrab')
@@ -144,9 +267,10 @@ function safeName(name) {
     .slice(0, 100) || 'LinkGrab';
 }
 
+
 /* =========================================================
-   Find Output
-========================================================= */
+   Output Search
+   ========================================================= */
 
 function findOutput(dir, ext) {
   const entries = fs.readdirSync(dir, {
@@ -159,14 +283,20 @@ function findOutput(dir, ext) {
     const filePath = path.join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      found.push(...findOutput(filePath, ext));
+      found.push(
+        ...findOutput(filePath, ext)
+      );
+
       continue;
     }
 
+    const lower =
+      entry.name.toLowerCase();
+
     if (
-      entry.name.toLowerCase().endsWith(ext) &&
-      !entry.name.endsWith('.part') &&
-      !entry.name.endsWith('.ytdl')
+      lower.endsWith(ext) &&
+      !lower.endsWith('.part') &&
+      !lower.endsWith('.ytdl')
     ) {
       found.push(filePath);
     }
@@ -175,9 +305,10 @@ function findOutput(dir, ext) {
   return found;
 }
 
+
 /* =========================================================
-   Media Information
-========================================================= */
+   FFprobe
+   ========================================================= */
 
 async function getMediaStreams(file) {
   try {
@@ -205,60 +336,62 @@ async function getMediaStreams(file) {
   }
 }
 
-/* =========================================================
-   MP4 Compatibility Check
-========================================================= */
 
 async function mediaHasVideoAndAudio(file) {
-  const streams = await getMediaStreams(file);
+  const streams =
+    await getMediaStreams(file);
 
-  const hasVideo = streams.some(
-    stream =>
-      stream.codec_type === 'video'
+  return (
+    streams.some(
+      (stream) =>
+        stream.codec_type === 'video'
+    ) &&
+    streams.some(
+      (stream) =>
+        stream.codec_type === 'audio'
+    )
   );
-
-  const hasAudio = streams.some(
-    stream =>
-      stream.codec_type === 'audio'
-  );
-
-  return hasVideo && hasAudio;
 }
 
+
 async function mediaIsCompatibleMp4(file) {
-  const streams = await getMediaStreams(file);
+  const streams =
+    await getMediaStreams(file);
 
-  const video = streams.find(
-    stream =>
-      stream.codec_type === 'video'
-  );
+  const video =
+    streams.find(
+      (stream) =>
+        stream.codec_type === 'video'
+    );
 
-  const audio = streams.find(
-    stream =>
-      stream.codec_type === 'audio'
-  );
+  const audio =
+    streams.find(
+      (stream) =>
+        stream.codec_type === 'audio'
+    );
 
   if (!video || !audio) {
     return false;
   }
 
-  const videoCodec =
+  const videoCompatible =
     String(video.codec_name || '')
-      .toLowerCase();
+      .toLowerCase() === 'h264';
 
-  const audioCodec =
+  const audioCompatible =
     String(audio.codec_name || '')
-      .toLowerCase();
+      .toLowerCase() === 'aac';
 
   return (
-    videoCodec === 'h264' &&
-    audioCodec === 'aac'
+    videoCompatible &&
+    audioCompatible
   );
 }
 
+
 /* =========================================================
-   Convert To Browser-Compatible MP4
-========================================================= */
+   MP4 Conversion
+   ========================================================= */
 
 async function convertToCompatibleMp4(
   input,
@@ -272,24 +405,15 @@ async function convertToCompatibleMp4(
       '-i',
       input,
 
-      /*
-       * H.264 / AVC
-       */
       '-map',
       '0:v:0',
 
-      /*
-       * AAC
-       */
       '-map',
       '0:a:0?',
 
       '-c:v',
       'libx264',
 
-      /*
-       * 手機、Safari、Chrome 相容性
-       */
       '-profile:v',
       'high',
 
@@ -302,9 +426,6 @@ async function convertToCompatibleMp4(
       '-crf',
       '23',
 
-      /*
-       * 音訊
-       */
       '-c:a',
       'aac',
 
@@ -314,70 +435,62 @@ async function convertToCompatibleMp4(
       '-ar',
       '48000',
 
-      /*
-       * 避免奇怪的像素格式
-       */
       '-pix_fmt',
       'yuv420p',
 
-      /*
-       * MP4 網頁最佳化
-       */
       '-movflags',
       '+faststart',
 
       output
     ],
-    15 * 60 * 1000
+    12 * 60 * 1000
   );
 }
 
+
 /* =========================================================
-   Validate Converted MP4
-========================================================= */
+   MP4 Validation
+   ========================================================= */
 
 async function validateMp4(file) {
-  const streams = await getMediaStreams(file);
+  const streams =
+    await getMediaStreams(file);
 
-  const video = streams.find(
-    stream =>
-      stream.codec_type === 'video'
-  );
+  const video =
+    streams.find(
+      (stream) =>
+        stream.codec_type === 'video'
+    );
 
-  const audio = streams.find(
-    stream =>
-      stream.codec_type === 'audio'
-  );
+  const audio =
+    streams.find(
+      (stream) =>
+        stream.codec_type === 'audio'
+    );
 
-  if (!video || !audio) {
-    return false;
+  if (!video) {
+    return {
+      valid: false,
+      reason: '缺少影片軌'
+    };
   }
 
-  const videoCodec =
-    String(video.codec_name || '')
-      .toLowerCase();
+  if (!audio) {
+    return {
+      valid: false,
+      reason: '缺少音訊軌'
+    };
+  }
 
-  const audioCodec =
-    String(audio.codec_name || '')
-      .toLowerCase();
-
-  const pixelFormat =
-    String(video.pix_fmt || '')
-      .toLowerCase();
-
-  return (
-    videoCodec === 'h264' &&
-    audioCodec === 'aac' &&
-    (
-      pixelFormat === 'yuv420p' ||
-      pixelFormat === 'yuvj420p'
-    )
-  );
+  return {
+    valid: true
+  };
 }
 
+
 /* =========================================================
-   YouTube / Threads / TikTok Disabled
-========================================================= */
+   Error Responses
+   ========================================================= */
 
 function rejectYouTube(res) {
   return res.status(503).json({
@@ -386,80 +499,126 @@ function rejectYouTube(res) {
   });
 }
 
-function rejectThreads(res) {
-  return res.status(503).json({
-    error:
-      'Threads 目前暫不可用，後端功能尚未完成。'
-  });
-}
 
 function rejectTikTok(res) {
   return res.status(503).json({
     error:
-      'TikTok 目前暫不由 LinkGrab 處理，請使用 TikTok 本身提供的下載功能。'
+      'TikTok 目前不由 LinkGrab 處理，請使用 TikTok 本身的下載功能。'
   });
 }
 
+
+function rejectDisabledProvider(
+  res,
+  provider
+) {
+  return res.status(503).json({
+    error:
+      `${provider.name} 目前暫不可用。`
+  });
+}
+
+
 /* =========================================================
-   Health
-========================================================= */
+   API Hello
+   ========================================================= */
 
 app.get('/api/hello', (req, res) => {
   res.json({
     status: 'ok',
+
     app: 'LinkGrab',
+
     version: '1.0.2',
 
-    ytDlp: fs.existsSync(YTDLP),
-    ffmpeg: fs.existsSync(FFMPEG),
-    ffprobe: fs.existsSync(FFPROBE),
+    ytDlp:
+      fs.existsSync(YTDLP),
+
+    ffmpeg:
+      fs.existsSync(FFMPEG),
+
+    ffprobe:
+      fs.existsSync(FFPROBE),
 
     platforms: {
       youtube: false,
-      instagram: true,
-      facebook: true,
-      tiktok: false,
-      twitter: true,
-      vimeo: true,
-      soundcloud: true,
-      threads: false
+
+      instagram:
+        PROVIDERS.instagram.enabled,
+
+      facebook:
+        PROVIDERS.facebook.enabled,
+
+      tiktok:
+        PROVIDERS.tiktok.enabled,
+
+      twitter:
+        PROVIDERS.twitter.enabled,
+
+      vimeo:
+        PROVIDERS.vimeo.enabled,
+
+      soundcloud:
+        PROVIDERS.soundcloud.enabled,
+
+      threads:
+        PROVIDERS.threads.enabled
     }
   });
 });
 
+
+/* =========================================================
+   Health
+   ========================================================= */
+
 app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
-    ytDlp: fs.existsSync(YTDLP),
-    ffmpeg: fs.existsSync(FFMPEG),
-    ffprobe: fs.existsSync(FFPROBE)
+
+    ytDlp:
+      fs.existsSync(YTDLP),
+
+    ffmpeg:
+      fs.existsSync(FFMPEG),
+
+    ffprobe:
+      fs.existsSync(FFPROBE),
+
+    threads:
+      PROVIDERS.threads.enabled
   });
 });
 
+
 /* =========================================================
-   Search
-========================================================= */
+   SoundCloud Search
+   ========================================================= */
 
 app.post('/api/search', async (req, res) => {
-  const query = String(
-    req.body?.query || ''
-  ).trim();
+  const query =
+    String(
+      req.body?.query || ''
+    ).trim();
 
-  const platform = String(
-    req.body?.platform || ''
-  ).toLowerCase();
+  const platform =
+    String(
+      req.body?.platform || ''
+    ).toLowerCase();
 
-  const limit = Math.min(
-    Math.max(
-      Number(req.body?.limit) || 10,
-      1
-    ),
-    10
-  );
+  const limit =
+    Math.min(
+      Math.max(
+        Number(req.body?.limit) || 10,
+        1
+      ),
+      10
+    );
 
   if (!query) {
     return res.status(400).json({
-      error: '請輸入搜尋關鍵字'
+      error:
+        '請輸入搜尋關鍵字'
     });
   }
 
@@ -470,7 +629,9 @@ app.post('/api/search', async (req, res) => {
     });
   }
 
-  if (platform.includes('youtube')) {
+  if (
+    platform.includes('youtube')
+  ) {
     return res.status(503).json({
       error:
         'YouTube 目前暫不可用。'
@@ -482,24 +643,27 @@ app.post('/api/search', async (req, res) => {
     platform.includes('sound')
   ) {
     try {
-      const { stdout } = await run(
-        YTDLP,
-        [
-          '--flat-playlist',
-          '-J',
-          '--no-warnings',
-          `scsearch${limit}:${query}`
-        ],
-        90 * 1000
-      );
+      const { stdout } =
+        await run(
+          YTDLP,
+          [
+            '--flat-playlist',
+            '-J',
+            '--no-warnings',
+            `scsearch${limit}:${query}`
+          ],
+          90 * 1000
+        );
 
-      const data = JSON.parse(stdout);
+      const data =
+        JSON.parse(stdout);
 
       const results =
         (data.entries || [])
           .filter(Boolean)
           .map((item) => ({
-            id: item.id || '',
+            id:
+              item.id || '',
 
             url:
               item.webpage_url ||
@@ -527,7 +691,6 @@ app.post('/api/search', async (req, res) => {
       return res.json({
         results
       });
-
     } catch (e) {
       return res.status(500).json({
         error:
@@ -542,18 +705,21 @@ app.post('/api/search', async (req, res) => {
   });
 });
 
+
 /* =========================================================
-   Info
-========================================================= */
+   INFO / ANALYZE
+   ========================================================= */
 
 app.post('/api/info', async (req, res) => {
-  const url = String(
-    req.body?.url || ''
-  ).trim();
+  const url =
+    String(
+      req.body?.url || ''
+    ).trim();
 
   if (!url) {
     return res.status(400).json({
-      error: '請輸入網址'
+      error:
+        '請輸入網址'
     });
   }
 
@@ -564,26 +730,29 @@ app.post('/api/info', async (req, res) => {
     });
   }
 
-  const platform =
-    platformOf(url);
-
-  if (platform === 'YouTube') {
+  if (isYouTube(url)) {
     return rejectYouTube(res);
   }
 
-  if (platform === 'Threads') {
-    return rejectThreads(res);
-  }
+  const provider =
+    getProvider(url);
 
-  if (platform === 'TikTok') {
-    return rejectTikTok(res);
-  }
-
-  if (platform === 'Unknown') {
+  if (!provider) {
     return res.status(400).json({
       error:
         '目前不支援這個網站。'
     });
+  }
+
+  if (!provider.enabled) {
+    if (provider.name === 'TikTok') {
+      return rejectTikTok(res);
+    }
+
+    return rejectDisabledProvider(
+      res,
+      provider
+    );
   }
 
   if (!fs.existsSync(YTDLP)) {
@@ -594,23 +763,40 @@ app.post('/api/info', async (req, res) => {
   }
 
   try {
-    const { stdout } = await run(
-      YTDLP,
-      [
-        '-J',
-        '--no-warnings',
-        '--no-playlist',
+    const { stdout } =
+      await run(
+        YTDLP,
+        [
+          '-J',
 
-        /*
-         * 不下載，只取得資訊
-         */
-        url
-      ],
-      90 * 1000
-    );
+          '--no-warnings',
+
+          '--no-playlist',
+
+          '--retries',
+          '2',
+
+          '--fragment-retries',
+          '2',
+
+          '--file-access-retries',
+          '2',
+
+          '--socket-timeout',
+          '30',
+
+          url
+        ],
+        90 * 1000
+      );
 
     const data =
       JSON.parse(stdout);
+
+    res.setHeader(
+      'Cache-Control',
+      'no-store'
+    );
 
     res.json({
       title:
@@ -638,25 +824,30 @@ app.post('/api/info', async (req, res) => {
         data.like_count ||
         0,
 
-      platform
-    });
+      platform:
+        provider.name,
 
+      provider:
+        provider.id
+    });
   } catch (e) {
     res.status(500).json({
       error:
-        `分析失敗：${e.message}`
+        `${provider.name} 分析失敗：${e.message}`
     });
   }
 });
 
+
 /* =========================================================
-   Download
-========================================================= */
+   DOWNLOAD
+   ========================================================= */
 
 app.post('/api/download', async (req, res) => {
-  const url = String(
-    req.body?.url || ''
-  ).trim();
+  const url =
+    String(
+      req.body?.url || ''
+    ).trim();
 
   const format =
     req.body?.format === 'mp3'
@@ -671,36 +862,41 @@ app.post('/api/download', async (req, res) => {
 
   if (!url) {
     return res.status(400).json({
-      error: '缺少網址'
+      error:
+        '缺少網址'
     });
   }
 
   if (!/^https?:\/\//i.test(url)) {
     return res.status(400).json({
-      error: '網址格式錯誤'
+      error:
+        '網址格式錯誤'
     });
   }
 
-  const platform =
-    platformOf(url);
-
-  if (platform === 'YouTube') {
+  if (isYouTube(url)) {
     return rejectYouTube(res);
   }
 
-  if (platform === 'Threads') {
-    return rejectThreads(res);
-  }
+  const provider =
+    getProvider(url);
 
-  if (platform === 'TikTok') {
-    return rejectTikTok(res);
-  }
-
-  if (platform === 'Unknown') {
+  if (!provider) {
     return res.status(400).json({
       error:
         '目前不支援這個網站。'
     });
+  }
+
+  if (!provider.enabled) {
+    if (provider.name === 'TikTok') {
+      return rejectTikTok(res);
+    }
+
+    return rejectDisabledProvider(
+      res,
+      provider
+    );
   }
 
   if (!fs.existsSync(YTDLP)) {
@@ -733,9 +929,12 @@ app.post('/api/download', async (req, res) => {
       jobId
     );
 
-  fs.mkdirSync(jobDir, {
-    recursive: true
-  });
+  fs.mkdirSync(
+    jobDir,
+    {
+      recursive: true
+    }
+  );
 
   const template =
     path.join(
@@ -745,7 +944,9 @@ app.post('/api/download', async (req, res) => {
 
   const args = [
     '--no-warnings',
+
     '--no-playlist',
+
     '--newline',
 
     '--retries',
@@ -757,9 +958,6 @@ app.post('/api/download', async (req, res) => {
     '--file-access-retries',
     '2',
 
-    /*
-     * 讓 yt-dlp 自己處理重試
-     */
     '--socket-timeout',
     '30',
 
@@ -767,61 +965,56 @@ app.post('/api/download', async (req, res) => {
     template
   ];
 
-  /* =====================================================
-     MP4
-  ===================================================== */
+
+  /* =======================================================
+     Format Selection
+     ======================================================= */
 
   if (format === 'mp4') {
     const quality =
-      ['high', 'medium', 'low'].includes(
+      [
+        'high',
+        'medium',
+        'low'
+      ].includes(
         String(req.body?.quality)
       )
         ? String(req.body.quality)
         : 'high';
 
-    const height =
-      quality === 'high'
-        ? 1080
-        : quality === 'medium'
-          ? 720
-          : 480;
 
     /*
-     * 先盡可能取得 H.264 + AAC。
+     * Threads Provider
      *
-     * Instagram 有時候會提供：
-     * - H.264
-     * - AV1
-     * - VP9
-     * - AAC
-     * - Opus
+     * Threads plugin 主要提供 progressive/muxed MP4。
      *
-     * 不管最後拿到什麼，
-     * 後面都會再次檢查。
+     * 不要求一定存在獨立 video/audio stream。
      */
 
-    args.push(
-      '-f',
-      [
-        `bv*[height<=${height}][vcodec^=avc1][ext=mp4]+ba[acodec^=mp4a][ext=m4a]`,
-        `bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]`,
-        `bv*[height<=${height}][vcodec^=avc1]+ba`,
-        `bv*[height<=${height}]+ba`,
-        `b[height<=${height}][ext=mp4]`,
-        `b[height<=${height}]`,
-        `b`
-      ].join('/'),
+    if (
+      provider.formatMode === 'threads'
+    ) {
+      args.push(
+        '-f',
+        'best[ext=mp4]/best'
+      );
+    } else {
+      const height =
+        quality === 'high'
+          ? 1080
+          : quality === 'medium'
+            ? 720
+            : 480;
 
-      '--merge-output-format',
-      'mp4'
-    );
-  }
+      args.push(
+        '-f',
+        `bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}]+ba/b[ext=mp4]/b`,
 
-  /* =====================================================
-     MP3
-  ===================================================== */
-
-  else {
+        '--merge-output-format',
+        'mp4'
+      );
+    }
+  } else {
     args.push(
       '-f',
       'ba/b',
@@ -836,7 +1029,13 @@ app.post('/api/download', async (req, res) => {
     );
   }
 
+
   args.push(url);
+
+
+  /* =======================================================
+     Execute yt-dlp
+     ======================================================= */
 
   try {
     await run(
@@ -845,9 +1044,6 @@ app.post('/api/download', async (req, res) => {
       12 * 60 * 1000
     );
 
-    /* ===================================================
-       找輸出檔案
-    =================================================== */
 
     let outputs =
       findOutput(
@@ -855,58 +1051,63 @@ app.post('/api/download', async (req, res) => {
         `.${format}`
       );
 
+
+    /*
+     * Threads plugin may return a progressive
+     * MP4 with a normal .mp4 extension.
+     */
+
+    if (!outputs.length) {
+      outputs =
+        findOutput(
+          jobDir,
+          '.mp4'
+        );
+    }
+
+
     if (!outputs.length) {
       throw new Error(
         '找不到完成的檔案'
       );
     }
 
+
     let target =
       outputs[0];
 
-    /* ===================================================
-       MP4 Compatibility
-    =================================================== */
+
+    /* =====================================================
+       MP4 Validation
+       ===================================================== */
 
     if (format === 'mp4') {
+      const validation =
+        await validateMp4(target);
 
-      const hasVideoAudio =
-        await mediaHasVideoAndAudio(
-          target
-        );
-
-      if (!hasVideoAudio) {
+      if (!validation.valid) {
         throw new Error(
-          'MP4 缺少影片或音訊軌，無法提供下載'
+          `MP4 ${validation.reason}`
         );
       }
 
-      /*
-       * 不管來源平台是：
-       *
-       * H.264
-       * VP9
-       * AV1
-       * HEVC
-       * Opus
-       * Vorbis
-       *
-       * 只要不是瀏覽器友善的
-       * H.264 + AAC，
-       * 就重新轉碼。
-       */
 
       const compatible =
         await mediaIsCompatibleMp4(
           target
         );
 
-      if (!compatible) {
 
+      /*
+       * 如果不是 H.264 + AAC，
+       * 重新轉成最相容的 MP4。
+       */
+
+      if (!compatible) {
         const converted =
           path.join(
             jobDir,
-            `${requestedName}.converted.mp4`
+            `${requestedName}.compatible.mp4`
           );
 
         await convertToCompatibleMp4(
@@ -914,57 +1115,47 @@ app.post('/api/download', async (req, res) => {
           converted
         );
 
-        /*
-         * 再檢查一次
-         */
-        const convertedOk =
+
+        const convertedValidation =
           await validateMp4(
             converted
           );
 
-        if (!convertedOk) {
+        if (
+          !convertedValidation.valid
+        ) {
           throw new Error(
-            'MP4 轉碼完成，但 H.264 + AAC 格式檢查失敗'
+            'MP4 轉碼完成，但影片格式檢查失敗'
           );
         }
 
-        target = converted;
-      }
 
-      /*
-       * 最後再確認一次檔案真的存在
-       */
-      if (
-        !fs.existsSync(target) ||
-        fs.statSync(target).size === 0
-      ) {
-        throw new Error(
-          'MP4 檔案建立失敗'
-        );
-      }
-    }
+        const convertedCompatible =
+          await mediaIsCompatibleMp4(
+            converted
+          );
 
-    /* ===================================================
-       MP3 Validation
-    =================================================== */
+        if (!convertedCompatible) {
+          throw new Error(
+            'MP4 轉碼完成，但 H.264/AAC 格式檢查失敗'
+          );
+        }
 
-    if (format === 'mp3') {
-      if (
-        !fs.existsSync(target) ||
-        fs.statSync(target).size === 0
-      ) {
-        throw new Error(
-          'MP3 檔案建立失敗'
-        );
+
+        target =
+          converted;
       }
     }
 
-    /* ===================================================
-       Response
-    =================================================== */
 
     const filename =
       `${requestedName}.${format}`;
+
+
+    res.setHeader(
+      'Cache-Control',
+      'no-store'
+    );
 
     res.setHeader(
       'Content-Disposition',
@@ -978,15 +1169,11 @@ app.post('/api/download', async (req, res) => {
         : 'audio/mpeg'
     );
 
-    res.setHeader(
-      'Cache-Control',
-      'no-store'
-    );
 
     res.download(
       target,
       filename,
-      (err) => {
+      () => {
         fs.rm(
           jobDir,
           {
@@ -995,18 +1182,10 @@ app.post('/api/download', async (req, res) => {
           },
           () => {}
         );
-
-        if (err && !res.headersSent) {
-          res.status(500).json({
-            error:
-              `傳送檔案失敗：${err.message}`
-          });
-        }
       }
     );
 
   } catch (e) {
-
     fs.rm(
       jobDir,
       {
@@ -1016,16 +1195,18 @@ app.post('/api/download', async (req, res) => {
       () => {}
     );
 
+
     res.status(500).json({
       error:
-        `下載失敗：${e.message}`
+        `${provider.name} 下載失敗：${e.message}`
     });
   }
 });
 
+
 /* =========================================================
-   SPA Fallback
-========================================================= */
+   Frontend Fallback
+   ========================================================= */
 
 app.use((req, res) => {
   res.sendFile(
@@ -1036,9 +1217,10 @@ app.use((req, res) => {
   );
 });
 
+
 /* =========================================================
    Start
-========================================================= */
+   ========================================================= */
 
 app.listen(
   PORT,
@@ -1053,11 +1235,19 @@ app.listen(
     );
 
     console.log(
+      `yt-dlp exists: ${fs.existsSync(YTDLP)}`
+    );
+
+    console.log(
       `ffmpeg: ${fs.existsSync(FFMPEG)}`
     );
 
     console.log(
       `ffprobe: ${fs.existsSync(FFPROBE)}`
+    );
+
+    console.log(
+      `Threads provider: ${PROVIDERS.threads.enabled}`
     );
   }
 );
