@@ -16,8 +16,13 @@ const YTDLP =
   process.env.YTDLP_PATH ||
   path.join(ROOT, 'bin', 'yt-dlp');
 
-const FFMPEG = '/usr/bin/ffmpeg';
-const FFPROBE = '/usr/bin/ffprobe';
+const FFMPEG =
+  process.env.FFMPEG_PATH ||
+  '/usr/bin/ffmpeg';
+
+const FFPROBE =
+  process.env.FFPROBE_PATH ||
+  '/usr/bin/ffprobe';
 
 fs.mkdirSync(DOWNLOADS, { recursive: true });
 
@@ -32,6 +37,7 @@ app.use(express.static(PUBLIC));
    ========================================================= */
 
 const PROVIDERS = {
+
   instagram: {
     name: 'Instagram',
     enabled: true,
@@ -44,6 +50,7 @@ const PROVIDERS = {
 
     formatMode: 'standard'
   },
+
 
   facebook: {
     name: 'Facebook',
@@ -61,6 +68,7 @@ const PROVIDERS = {
     formatMode: 'standard'
   },
 
+
   twitter: {
     name: 'X / Twitter',
     enabled: true,
@@ -77,6 +85,7 @@ const PROVIDERS = {
     formatMode: 'standard'
   },
 
+
   vimeo: {
     name: 'Vimeo',
     enabled: true,
@@ -89,6 +98,7 @@ const PROVIDERS = {
 
     formatMode: 'standard'
   },
+
 
   soundcloud: {
     name: 'SoundCloud',
@@ -103,6 +113,7 @@ const PROVIDERS = {
     formatMode: 'standard'
   },
 
+
   /* =======================================================
      Threads
      ======================================================= */
@@ -112,16 +123,17 @@ const PROVIDERS = {
     enabled: true,
 
     matches(url) {
-      const u = String(url)
-        .toLowerCase();
+      const u = String(url || '').toLowerCase();
 
       return (
-        u.includes('threads.com')
+        u.includes('threads.com') ||
+        u.includes('threads.net')
       );
     },
 
     formatMode: 'threads'
   },
+
 
   /* =======================================================
      TikTok
@@ -139,6 +151,7 @@ const PROVIDERS = {
 
     formatMode: 'standard'
   }
+
 };
 
 
@@ -152,6 +165,7 @@ function run(
   timeout = 10 * 60 * 1000
 ) {
   return new Promise((resolve, reject) => {
+
     execFile(
       file,
       args,
@@ -159,16 +173,21 @@ function run(
         timeout,
         maxBuffer: 100 * 1024 * 1024
       },
+
       (err, stdout, stderr) => {
+
         if (err) {
+
           const error = new Error(
             (stderr || err.message || '命令執行失敗').trim()
           );
 
           error.stdout = stdout || '';
           error.stderr = stderr || '';
+          error.code = err.code;
 
           reject(error);
+
           return;
         }
 
@@ -176,8 +195,10 @@ function run(
           stdout: stdout || '',
           stderr: stderr || ''
         });
+
       }
     );
+
   });
 }
 
@@ -187,7 +208,9 @@ function run(
    ========================================================= */
 
 function isYouTube(url) {
-  const u = String(url).toLowerCase();
+
+  const u =
+    String(url).toLowerCase();
 
   return (
     u.includes('youtube.com') ||
@@ -197,20 +220,28 @@ function isYouTube(url) {
 
 
 function platformOf(url) {
-  const u = String(url).toLowerCase();
+
+  const u =
+    String(url).toLowerCase();
 
   if (isYouTube(u)) {
     return 'YouTube';
   }
 
-  for (const provider of Object.values(PROVIDERS)) {
+  for (
+    const provider of Object.values(PROVIDERS)
+  ) {
+
     try {
+
       if (provider.matches(u)) {
         return provider.name;
       }
+
     } catch {
       // Ignore provider detection errors
     }
+
   }
 
   return 'Unknown';
@@ -218,19 +249,29 @@ function platformOf(url) {
 
 
 function getProvider(url) {
-  const u = String(url).toLowerCase();
 
-  for (const [id, provider] of Object.entries(PROVIDERS)) {
+  const u =
+    String(url).toLowerCase();
+
+  for (
+    const [id, provider] of Object.entries(PROVIDERS)
+  ) {
+
     try {
+
       if (provider.matches(u)) {
+
         return {
           id,
           ...provider
         };
+
       }
+
     } catch {
       // Ignore provider detection errors
     }
+
   }
 
   return null;
@@ -238,7 +279,9 @@ function getProvider(url) {
 
 
 function providerIsEnabled(url) {
-  const provider = getProvider(url);
+
+  const provider =
+    getProvider(url);
 
   return !!(
     provider &&
@@ -251,18 +294,23 @@ function providerIsEnabled(url) {
    Threads URL Normalizer
    =========================================================
 
-   支援：
+   通用支援：
 
-   https://threads.com/@user/post/ABC123
-   https://www.threads.com/@user/post/ABC123
-   https://threads.com/@user/post/ABC123/media
-   https://www.threads.com/@user/post/ABC123/media/
+   threads.com
+   www.threads.com
+   threads.net
+   www.threads.net
 
-   只移除 Threads 貼文網址最後的 /media。
+   /@user/post/ID
+   /@user/post/ID/media
+   /share/CODE/
+
+   不包含任何固定帳號或固定貼文。
 
    ========================================================= */
 
 function normalizeThreadsUrl(url) {
+
   const original =
     String(url || '').trim();
 
@@ -271,6 +319,7 @@ function normalizeThreadsUrl(url) {
   }
 
   try {
+
     const parsed =
       new URL(original);
 
@@ -279,34 +328,67 @@ function normalizeThreadsUrl(url) {
 
     if (
       hostname !== 'threads.com' &&
-      hostname !== 'www.threads.com'
+      hostname !== 'www.threads.com' &&
+      hostname !== 'threads.net' &&
+      hostname !== 'www.threads.net'
     ) {
       return original;
     }
 
-    parsed.pathname =
-      parsed.pathname.replace(
-        /\/+$/,
+
+    let pathname =
+      parsed.pathname;
+
+
+    /*
+     * 移除尾端多餘 /
+     */
+
+    pathname =
+      pathname.replace(
+        /\/+$/g,
         ''
       );
 
-    parsed.pathname =
-      parsed.pathname.replace(
-        /\/media$/i,
+
+    /*
+     * Threads 貼文可能帶 /media
+     *
+     * 但 /share/XXXX/ 不會被改掉。
+     */
+
+    if (
+      /\/media$/i.test(pathname)
+    ) {
+
+      pathname =
+        pathname.replace(
+          /\/media$/i,
+          ''
+        );
+
+    }
+
+
+    pathname =
+      pathname.replace(
+        /\/+$/g,
         ''
       );
 
+
     parsed.pathname =
-      parsed.pathname.replace(
-        /\/+$/,
-        ''
-      );
+      pathname;
+
 
     return parsed.toString();
 
   } catch {
+
     return original;
+
   }
+
 }
 
 
@@ -315,6 +397,7 @@ function normalizeThreadsUrl(url) {
    ========================================================= */
 
 function normalizeUrl(url) {
+
   const provider =
     getProvider(url);
 
@@ -322,10 +405,13 @@ function normalizeUrl(url) {
     provider &&
     provider.id === 'threads'
   ) {
+
     return normalizeThreadsUrl(url);
+
   }
 
   return String(url || '').trim();
+
 }
 
 
@@ -334,18 +420,25 @@ function normalizeUrl(url) {
    ========================================================= */
 
 function safeName(name) {
+
   return String(name || 'LinkGrab')
+
     .replace(
       /[\\/:*?"<>|\x00-\x1F]/g,
       '_'
     )
+
     .replace(
       /\s+/g,
       ' '
     )
+
     .trim()
-    .slice(0, 100) ||
-    'LinkGrab';
+
+    .slice(0, 100)
+
+    || 'LinkGrab';
+
 }
 
 
@@ -354,6 +447,7 @@ function safeName(name) {
    ========================================================= */
 
 function findOutput(dir, ext) {
+
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -369,13 +463,16 @@ function findOutput(dir, ext) {
   const found = [];
 
   for (const entry of entries) {
+
     const filePath =
       path.join(
         dir,
         entry.name
       );
 
+
     if (entry.isDirectory()) {
+
       found.push(
         ...findOutput(
           filePath,
@@ -384,21 +481,28 @@ function findOutput(dir, ext) {
       );
 
       continue;
+
     }
+
 
     const lower =
       entry.name.toLowerCase();
+
 
     if (
       lower.endsWith(ext) &&
       !lower.endsWith('.part') &&
       !lower.endsWith('.ytdl')
     ) {
+
       found.push(filePath);
+
     }
+
   }
 
   return found;
+
 }
 
 
@@ -407,6 +511,7 @@ function findOutput(dir, ext) {
    ========================================================= */
 
 function findCompletedMedia(dir) {
+
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -422,22 +527,28 @@ function findCompletedMedia(dir) {
   const found = [];
 
   for (const entry of entries) {
+
     const filePath =
       path.join(
         dir,
         entry.name
       );
 
+
     if (entry.isDirectory()) {
+
       found.push(
         ...findCompletedMedia(filePath)
       );
 
       continue;
+
     }
+
 
     const lower =
       entry.name.toLowerCase();
+
 
     if (
       lower.endsWith('.part') ||
@@ -447,12 +558,25 @@ function findCompletedMedia(dir) {
       continue;
     }
 
-    const stat =
-      fs.statSync(filePath);
+
+    let stat;
+
+    try {
+
+      stat =
+        fs.statSync(filePath);
+
+    } catch {
+
+      continue;
+
+    }
+
 
     if (stat.size <= 0) {
       continue;
     }
+
 
     if (
       lower.endsWith('.mp4') ||
@@ -465,11 +589,15 @@ function findCompletedMedia(dir) {
       lower.endsWith('.opus') ||
       lower.endsWith('.aac')
     ) {
+
       found.push(filePath);
+
     }
+
   }
 
   return found;
+
 }
 
 
@@ -478,7 +606,9 @@ function findCompletedMedia(dir) {
    ========================================================= */
 
 async function getMediaStreams(file) {
+
   try {
+
     const { stdout } =
       await run(
         FFPROBE,
@@ -494,42 +624,33 @@ async function getMediaStreams(file) {
 
           file
         ],
+
         30 * 1000
       );
 
+
     const data =
       JSON.parse(stdout);
+
 
     return Array.isArray(data.streams)
       ? data.streams
       : [];
 
   } catch {
+
     return [];
+
   }
-}
 
-
-async function mediaHasVideoAndAudio(file) {
-  const streams =
-    await getMediaStreams(file);
-
-  return (
-    streams.some(
-      stream =>
-        stream.codec_type === 'video'
-    ) &&
-    streams.some(
-      stream =>
-        stream.codec_type === 'audio'
-    )
-  );
 }
 
 
 async function mediaIsCompatibleMp4(file) {
+
   const streams =
     await getMediaStreams(file);
+
 
   const video =
     streams.find(
@@ -537,30 +658,36 @@ async function mediaIsCompatibleMp4(file) {
         stream.codec_type === 'video'
     );
 
+
   const audio =
     streams.find(
       stream =>
         stream.codec_type === 'audio'
     );
 
+
   if (!video || !audio) {
     return false;
   }
+
 
   const videoCompatible =
     String(
       video.codec_name || ''
     ).toLowerCase() === 'h264';
 
+
   const audioCompatible =
     String(
       audio.codec_name || ''
     ).toLowerCase() === 'aac';
 
+
   return (
     videoCompatible &&
     audioCompatible
   );
+
 }
 
 
@@ -572,6 +699,7 @@ async function convertToCompatibleMp4(
   input,
   output
 ) {
+
   await run(
     FFMPEG,
     [
@@ -618,8 +746,10 @@ async function convertToCompatibleMp4(
 
       output
     ],
+
     12 * 60 * 1000
   );
+
 }
 
 
@@ -628,8 +758,10 @@ async function convertToCompatibleMp4(
    ========================================================= */
 
 async function validateMp4(file) {
+
   const streams =
     await getMediaStreams(file);
+
 
   const video =
     streams.find(
@@ -637,29 +769,38 @@ async function validateMp4(file) {
         stream.codec_type === 'video'
     );
 
+
   const audio =
     streams.find(
       stream =>
         stream.codec_type === 'audio'
     );
 
+
   if (!video) {
+
     return {
       valid: false,
       reason: '缺少影片軌'
     };
+
   }
 
+
   if (!audio) {
+
     return {
       valid: false,
       reason: '缺少音訊軌'
     };
+
   }
+
 
   return {
     valid: true
   };
+
 }
 
 
@@ -668,22 +809,26 @@ async function validateMp4(file) {
    ========================================================= */
 
 function parseYtdlpJson(stdout) {
+
   const text =
     String(stdout || '').trim();
 
+
   if (!text) {
+
     throw new Error(
       'yt-dlp 沒有回傳資料'
     );
+
   }
 
+
   try {
+
     return JSON.parse(text);
+
   } catch {
-    /*
-     * 某些情況下 stdout 可能有額外輸出。
-     * 嘗試尋找最後一段 JSON。
-     */
+
 
     const lines =
       text
@@ -691,39 +836,42 @@ function parseYtdlpJson(stdout) {
         .map(line => line.trim())
         .filter(Boolean);
 
+
     for (
       let i = lines.length - 1;
       i >= 0;
       i--
     ) {
+
       try {
+
         return JSON.parse(lines[i]);
+
       } catch {
         // Continue
       }
+
     }
+
 
     throw new Error(
       '無法解析 yt-dlp 回傳資料'
     );
+
   }
+
 }
 
 
 /* =========================================================
    Threads Info
-   =========================================================
-
-   Threads 專用分析。
-
-   yt-dlp-threads extractor 會從公開 Threads
-   貼文的嵌入資料取得媒體資訊。
-
    ========================================================= */
 
 async function getThreadsInfo(url) {
+
   const normalizedUrl =
     normalizeThreadsUrl(url);
+
 
   const { stdout, stderr } =
     await run(
@@ -749,44 +897,46 @@ async function getThreadsInfo(url) {
 
         normalizedUrl
       ],
+
       90 * 1000
     );
 
+
   const data =
     parseYtdlpJson(stdout);
+
 
   return {
     data,
     stderr
   };
+
 }
 
 
 /* =========================================================
    Threads Download
-   =========================================================
-
-   與一般平台不同：
-
-   1. 使用 Threads extractor
-   2. 使用 after_move:filepath 取得實際檔案
-   3. 如果 stdout 沒有路徑，再掃描 jobDir
-   4. 最後再進行 MP4 相容性處理
-
    ========================================================= */
 
 async function downloadThreads({
   url,
   format,
-  requestedName,
   jobDir,
   template
 }) {
+
   const normalizedUrl =
     normalizeThreadsUrl(url);
 
+
+  /*
+   * MP3
+   */
+
   if (format === 'mp3') {
+
     const args = [
+
       '--no-warnings',
 
       '--no-playlist',
@@ -825,6 +975,7 @@ async function downloadThreads({
       normalizedUrl
     ];
 
+
     const { stdout } =
       await run(
         YTDLP,
@@ -832,47 +983,56 @@ async function downloadThreads({
         12 * 60 * 1000
       );
 
+
     let target =
       parsePrintedFilepath(
         stdout,
         jobDir
       );
 
+
     if (
       !target ||
       !fs.existsSync(target)
     ) {
+
       const outputs =
         findOutput(
           jobDir,
           '.mp3'
         );
 
+
       if (outputs.length) {
         target = outputs[0];
       }
+
     }
+
 
     if (
       !target ||
       !fs.existsSync(target)
     ) {
+
       throw new Error(
         'Threads 下載完成，但找不到 yt-dlp 產生的 MP3 檔案'
       );
+
     }
 
+
     return target;
+
   }
 
 
   /*
-   * Threads 影片：
-   *
-   * plugin 主要提供 progressive/muxed MP4。
+   * MP4
    */
 
   const args = [
+
     '--no-warnings',
 
     '--no-playlist',
@@ -891,6 +1051,12 @@ async function downloadThreads({
     '--socket-timeout',
     '30',
 
+    /*
+     * Threads plugin 主要提供 MP4。
+     *
+     * 先嘗試 MP4，再退回 best。
+     */
+
     '-f',
     'best[ext=mp4]/best',
 
@@ -904,7 +1070,7 @@ async function downloadThreads({
   ];
 
 
-  const { stdout } =
+  const result =
     await run(
       YTDLP,
       args,
@@ -914,48 +1080,53 @@ async function downloadThreads({
 
   let target =
     parsePrintedFilepath(
-      stdout,
+      result.stdout,
       jobDir
     );
 
 
   /*
-   * 如果 yt-dlp 沒有透過 --print
-   * 回傳路徑，就從 jobDir 找。
+   * 第一層 fallback
    */
 
   if (
     !target ||
     !fs.existsSync(target)
   ) {
+
     const outputs =
       findOutput(
         jobDir,
         '.mp4'
       );
 
+
     if (outputs.length) {
       target = outputs[0];
     }
+
   }
 
 
   /*
-   * 最後使用更寬鬆的媒體搜尋。
+   * 第二層 fallback
    */
 
   if (
     !target ||
     !fs.existsSync(target)
   ) {
+
     const outputs =
       findCompletedMedia(
         jobDir
       );
 
+
     if (outputs.length) {
       target = outputs[0];
     }
+
   }
 
 
@@ -963,13 +1134,26 @@ async function downloadThreads({
     !target ||
     !fs.existsSync(target)
   ) {
+
+    const details =
+      String(
+        result.stderr ||
+        result.stdout ||
+        ''
+      ).trim();
+
+
     throw new Error(
-      'Threads 下載完成，但找不到 yt-dlp 產生的影片檔案'
+      details
+        ? `Threads 下載完成，但找不到影片檔案：${details.slice(-1500)}`
+        : 'Threads 下載完成，但找不到 yt-dlp 產生的影片檔案'
     );
+
   }
 
 
   return target;
+
 }
 
 
@@ -981,30 +1165,23 @@ function parsePrintedFilepath(
   stdout,
   jobDir
 ) {
+
   const lines =
     String(stdout || '')
       .split(/\r?\n/)
       .map(line => line.trim())
       .filter(Boolean);
 
-  /*
-   * after_move:filepath 通常是最後幾行之一。
-   *
-   * 從後往前找存在的檔案。
-   */
 
   for (
     let i = lines.length - 1;
     i >= 0;
     i--
   ) {
+
     const line =
       lines[i];
 
-    /*
-     * 避免把一般 yt-dlp log
-     * 當成檔案路徑。
-     */
 
     if (
       line.includes('[download]') ||
@@ -1015,32 +1192,37 @@ function parsePrintedFilepath(
       continue;
     }
 
+
     let candidate =
       line;
 
-    /*
-     * 如果是相對路徑，
-     * 以 jobDir 為基準。
-     */
 
     if (
       !path.isAbsolute(candidate)
     ) {
+
       candidate =
         path.resolve(
           jobDir,
           candidate
         );
+
     }
+
 
     if (
       fs.existsSync(candidate)
     ) {
+
       return candidate;
+
     }
+
   }
 
+
   return null;
+
 }
 
 
@@ -1049,18 +1231,26 @@ function parsePrintedFilepath(
    ========================================================= */
 
 function rejectYouTube(res) {
+
   return res.status(503).json({
+
     error:
       'YouTube 目前暫不可用，請改用其他支援平台。'
+
   });
+
 }
 
 
 function rejectTikTok(res) {
+
   return res.status(503).json({
+
     error:
       'TikTok 目前不由 LinkGrab 處理，請使用 TikTok 本身的下載功能。'
+
   });
+
 }
 
 
@@ -1068,10 +1258,14 @@ function rejectDisabledProvider(
   res,
   provider
 ) {
+
   return res.status(503).json({
+
     error:
       `${provider.name} 目前暫不可用。`
+
   });
+
 }
 
 
@@ -1080,7 +1274,9 @@ function rejectDisabledProvider(
    ========================================================= */
 
 app.get('/api/hello', (req, res) => {
+
   res.json({
+
     status: 'ok',
 
     app: 'LinkGrab',
@@ -1090,6 +1286,9 @@ app.get('/api/hello', (req, res) => {
     ytDlp:
       fs.existsSync(YTDLP),
 
+    ytDlpPath:
+      YTDLP,
+
     ffmpeg:
       fs.existsSync(FFMPEG),
 
@@ -1097,6 +1296,7 @@ app.get('/api/hello', (req, res) => {
       fs.existsSync(FFPROBE),
 
     platforms: {
+
       youtube: false,
 
       instagram:
@@ -1119,8 +1319,11 @@ app.get('/api/hello', (req, res) => {
 
       threads:
         PROVIDERS.threads.enabled
+
     }
+
   });
+
 });
 
 
@@ -1129,7 +1332,9 @@ app.get('/api/hello', (req, res) => {
    ========================================================= */
 
 app.get('/api/health', (req, res) => {
+
   res.json({
+
     ok: true,
 
     ytDlp:
@@ -1143,7 +1348,9 @@ app.get('/api/health', (req, res) => {
 
     threads:
       PROVIDERS.threads.enabled
+
   });
+
 });
 
 
@@ -1152,15 +1359,18 @@ app.get('/api/health', (req, res) => {
    ========================================================= */
 
 app.post('/api/search', async (req, res) => {
+
   const query =
     String(
       req.body?.query || ''
     ).trim();
 
+
   const platform =
     String(
       req.body?.platform || ''
     ).toLowerCase();
+
 
   const limit =
     Math.min(
@@ -1171,34 +1381,52 @@ app.post('/api/search', async (req, res) => {
       10
     );
 
+
   if (!query) {
+
     return res.status(400).json({
+
       error:
         '請輸入搜尋關鍵字'
+
     });
+
   }
 
+
   if (!fs.existsSync(YTDLP)) {
+
     return res.status(500).json({
+
       error:
         '伺服器尚未準備 yt-dlp'
+
     });
+
   }
+
 
   if (
     platform.includes('youtube')
   ) {
+
     return res.status(503).json({
+
       error:
         'YouTube 目前暫不可用。'
+
     });
+
   }
+
 
   if (
     platform.includes('soundcloud') ||
     platform.includes('sound')
   ) {
+
     try {
+
       const { stdout } =
         await run(
           YTDLP,
@@ -1211,13 +1439,16 @@ app.post('/api/search', async (req, res) => {
           90 * 1000
         );
 
+
       const data =
         JSON.parse(stdout);
+
 
       const results =
         (data.entries || [])
           .filter(Boolean)
           .map(item => ({
+
             id:
               item.id || '',
 
@@ -1242,24 +1473,36 @@ app.post('/api/search', async (req, res) => {
             duration:
               item.duration ||
               0
+
           }));
+
 
       return res.json({
         results
       });
 
+
     } catch (e) {
+
       return res.status(500).json({
+
         error:
           `搜尋失敗：${e.message}`
+
       });
+
     }
+
   }
 
+
   return res.status(400).json({
+
     error:
       '目前只有 SoundCloud 搜尋功能。'
+
   });
+
 });
 
 
@@ -1268,40 +1511,62 @@ app.post('/api/search', async (req, res) => {
    ========================================================= */
 
 app.post('/api/info', async (req, res) => {
+
   const originalUrl =
     String(
       req.body?.url || ''
     ).trim();
 
+
   if (!originalUrl) {
+
     return res.status(400).json({
+
       error:
         '請輸入網址'
+
     });
+
   }
 
-  if (!/^https?:\/\//i.test(originalUrl)) {
+
+  if (
+    !/^https?:\/\//i.test(originalUrl)
+  ) {
+
     return res.status(400).json({
+
       error:
         '請輸入有效的網址'
+
     });
+
   }
+
 
   if (isYouTube(originalUrl)) {
     return rejectYouTube(res);
   }
 
+
   const provider =
     getProvider(originalUrl);
 
+
   if (!provider) {
+
     return res.status(400).json({
+
       error:
         '目前不支援這個網站。'
+
     });
+
   }
 
+
   if (!provider.enabled) {
+
     if (provider.name === 'TikTok') {
       return rejectTikTok(res);
     }
@@ -1310,13 +1575,19 @@ app.post('/api/info', async (req, res) => {
       res,
       provider
     );
+
   }
 
+
   if (!fs.existsSync(YTDLP)) {
+
     return res.status(500).json({
+
       error:
         '伺服器尚未準備 yt-dlp'
+
     });
+
   }
 
 
@@ -1325,21 +1596,33 @@ app.post('/api/info', async (req, res) => {
 
 
   try {
+
     let data;
 
+
     /*
-     * Threads 專用分析
+     * Threads 專用
      */
+
     if (
       provider.id === 'threads'
     ) {
+
       const result =
         await getThreadsInfo(url);
 
       data =
         result.data;
 
-    } else {
+    }
+
+
+    /*
+     * 一般平台
+     */
+
+    else {
+
       const { stdout } =
         await run(
           YTDLP,
@@ -1367,8 +1650,10 @@ app.post('/api/info', async (req, res) => {
           90 * 1000
         );
 
+
       data =
         parseYtdlpJson(stdout);
+
     }
 
 
@@ -1378,16 +1663,12 @@ app.post('/api/info', async (req, res) => {
     );
 
 
-    /*
-     * Threads 某些版本可能沒有 thumbnail。
-     *
-     * 這裡不會因為沒有縮圖而讓分析失敗。
-     */
-
     res.json({
+
       title:
         data.title ||
         '未命名影片',
+
 
       thumbnail:
         data.thumbnail ||
@@ -1400,36 +1681,62 @@ app.post('/api/info', async (req, res) => {
             : ''
         ),
 
+
       duration:
         data.duration ||
         0,
+
 
       uploader:
         data.uploader ||
         data.channel ||
         '',
 
+
       view_count:
         data.view_count ||
         0,
+
 
       like_count:
         data.like_count ||
         0,
 
+
       platform:
         provider.name,
 
+
       provider:
         provider.id
+
     });
 
+
   } catch (e) {
+
+    console.error(
+      `[${provider.name}] analyze error:`,
+      e.message
+    );
+
+
+    if (e.stderr) {
+      console.error(
+        e.stderr.slice(-3000)
+      );
+    }
+
+
     res.status(500).json({
+
       error:
         `${provider.name} 分析失敗：${e.message}`
+
     });
+
   }
+
 });
 
 
@@ -1438,15 +1745,18 @@ app.post('/api/info', async (req, res) => {
    ========================================================= */
 
 app.post('/api/download', async (req, res) => {
+
   const originalUrl =
     String(
       req.body?.url || ''
     ).trim();
 
+
   const format =
     req.body?.format === 'mp3'
       ? 'mp3'
       : 'mp4';
+
 
   const requestedName =
     safeName(
@@ -1456,18 +1766,30 @@ app.post('/api/download', async (req, res) => {
 
 
   if (!originalUrl) {
+
     return res.status(400).json({
+
       error:
         '缺少網址'
+
     });
+
   }
 
-  if (!/^https?:\/\//i.test(originalUrl)) {
+
+  if (
+    !/^https?:\/\//i.test(originalUrl)
+  ) {
+
     return res.status(400).json({
+
       error:
         '網址格式錯誤'
+
     });
+
   }
+
 
   if (isYouTube(originalUrl)) {
     return rejectYouTube(res);
@@ -1479,14 +1801,19 @@ app.post('/api/download', async (req, res) => {
 
 
   if (!provider) {
+
     return res.status(400).json({
+
       error:
         '目前不支援這個網站。'
+
     });
+
   }
 
 
   if (!provider.enabled) {
+
     if (provider.name === 'TikTok') {
       return rejectTikTok(res);
     }
@@ -1495,30 +1822,43 @@ app.post('/api/download', async (req, res) => {
       res,
       provider
     );
+
   }
 
 
   if (!fs.existsSync(YTDLP)) {
+
     return res.status(500).json({
+
       error:
         '伺服器尚未準備 yt-dlp'
+
     });
+
   }
 
 
   if (!fs.existsSync(FFMPEG)) {
+
     return res.status(500).json({
+
       error:
         '伺服器尚未準備 FFmpeg'
+
     });
+
   }
 
 
   if (!fs.existsSync(FFPROBE)) {
+
     return res.status(500).json({
+
       error:
         '伺服器尚未準備 FFprobe'
+
     });
+
   }
 
 
@@ -1550,8 +1890,9 @@ app.post('/api/download', async (req, res) => {
 
   try {
 
+
     /* =====================================================
-       Threads 專用下載流程
+       Threads
        ===================================================== */
 
     if (
@@ -1560,16 +1901,20 @@ app.post('/api/download', async (req, res) => {
 
       let target =
         await downloadThreads({
+
           url: originalUrl,
+
           format,
-          requestedName,
+
           jobDir,
+
           template
+
         });
 
 
       /*
-       * MP4 相容性處理
+       * MP4 相容性
        */
 
       if (format === 'mp4') {
@@ -1579,9 +1924,11 @@ app.post('/api/download', async (req, res) => {
 
 
         if (!validation.valid) {
+
           throw new Error(
             `MP4 ${validation.reason}`
           );
+
         }
 
 
@@ -1615,9 +1962,11 @@ app.post('/api/download', async (req, res) => {
           if (
             !convertedValidation.valid
           ) {
+
             throw new Error(
               'MP4 轉碼完成，但影片格式檢查失敗'
             );
+
           }
 
 
@@ -1628,15 +1977,19 @@ app.post('/api/download', async (req, res) => {
 
 
           if (!convertedCompatible) {
+
             throw new Error(
               'MP4 轉碼完成，但 H.264/AAC 格式檢查失敗'
             );
+
           }
 
 
           target =
             converted;
+
         }
+
       }
 
 
@@ -1668,6 +2021,7 @@ app.post('/api/download', async (req, res) => {
         target,
         filename,
         () => {
+
           fs.rm(
             jobDir,
             {
@@ -1676,13 +2030,15 @@ app.post('/api/download', async (req, res) => {
             },
             () => {}
           );
+
         }
       );
+
     }
 
 
     /* =====================================================
-       一般平台下載流程
+       一般平台
        ===================================================== */
 
     const url =
@@ -1690,6 +2046,7 @@ app.post('/api/download', async (req, res) => {
 
 
     const args = [
+
       '--no-warnings',
 
       '--no-playlist',
@@ -1710,6 +2067,7 @@ app.post('/api/download', async (req, res) => {
 
       '-o',
       template
+
     ];
 
 
@@ -1740,16 +2098,23 @@ app.post('/api/download', async (req, res) => {
 
 
       args.push(
+
         '-f',
+
         `bv*[height<=${height}][vcodec^=avc1]+ba[acodec^=mp4a]/bv*[height<=${height}]+ba/b[ext=mp4]/b`,
 
         '--merge-output-format',
         'mp4'
+
       );
 
-    } else {
+    }
+
+
+    else {
 
       args.push(
+
         '-f',
         'ba/b',
 
@@ -1760,7 +2125,9 @@ app.post('/api/download', async (req, res) => {
 
         '--audio-quality',
         '0'
+
       );
+
     }
 
 
@@ -1786,18 +2153,22 @@ app.post('/api/download', async (req, res) => {
 
 
     if (!outputs.length) {
+
       outputs =
         findOutput(
           jobDir,
           '.mp4'
         );
+
     }
 
 
     if (!outputs.length) {
+
       throw new Error(
         '找不到完成的檔案'
       );
+
     }
 
 
@@ -1816,9 +2187,11 @@ app.post('/api/download', async (req, res) => {
 
 
       if (!validation.valid) {
+
         throw new Error(
           `MP4 ${validation.reason}`
         );
+
       }
 
 
@@ -1852,9 +2225,11 @@ app.post('/api/download', async (req, res) => {
         if (
           !convertedValidation.valid
         ) {
+
           throw new Error(
             'MP4 轉碼完成，但影片格式檢查失敗'
           );
+
         }
 
 
@@ -1865,15 +2240,19 @@ app.post('/api/download', async (req, res) => {
 
 
         if (!convertedCompatible) {
+
           throw new Error(
             'MP4 轉碼完成，但 H.264/AAC 格式檢查失敗'
           );
+
         }
 
 
         target =
           converted;
+
       }
+
     }
 
 
@@ -1905,6 +2284,7 @@ app.post('/api/download', async (req, res) => {
       target,
       filename,
       () => {
+
         fs.rm(
           jobDir,
           {
@@ -1913,10 +2293,27 @@ app.post('/api/download', async (req, res) => {
           },
           () => {}
         );
+
       }
     );
 
+
   } catch (e) {
+
+    console.error(
+      `[${provider.name}] download error:`,
+      e.message
+    );
+
+
+    if (e.stderr) {
+
+      console.error(
+        e.stderr.slice(-3000)
+      );
+
+    }
+
 
     fs.rm(
       jobDir,
@@ -1929,10 +2326,14 @@ app.post('/api/download', async (req, res) => {
 
 
     res.status(500).json({
+
       error:
         `${provider.name} 下載失敗：${e.message}`
+
     });
+
   }
+
 });
 
 
@@ -1941,12 +2342,14 @@ app.post('/api/download', async (req, res) => {
    ========================================================= */
 
 app.use((req, res) => {
+
   res.sendFile(
     path.join(
       PUBLIC,
       'index.html'
     )
   );
+
 });
 
 
@@ -1963,24 +2366,30 @@ app.listen(
       `LinkGrab 1.0.2 listening on port ${PORT}`
     );
 
+
     console.log(
       `yt-dlp: ${YTDLP}`
     );
+
 
     console.log(
       `yt-dlp exists: ${fs.existsSync(YTDLP)}`
     );
 
+
     console.log(
       `ffmpeg: ${fs.existsSync(FFMPEG)}`
     );
+
 
     console.log(
       `ffprobe: ${fs.existsSync(FFPROBE)}`
     );
 
+
     console.log(
       `Threads provider: ${PROVIDERS.threads.enabled}`
     );
+
   }
 );
