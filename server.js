@@ -25,32 +25,31 @@ app.use(express.json({ limit: '1mb' }));
 app.disable('x-powered-by');
 app.use(express.static(PUBLIC));
 
+
 /* =========================================================
    LinkGrab 1.0.2
    Provider Registry
-   =========================================================
-
-   每個平台可以有自己的設定。
-
-   未來如果要新增平台，只需要在 PROVIDERS
-   加入一個 Provider，不需要重寫 /api/info
-   或 /api/download。
-
    ========================================================= */
 
 const PROVIDERS = {
   instagram: {
     name: 'Instagram',
     enabled: true,
+
     matches(url) {
-      return String(url).toLowerCase().includes('instagram.com');
+      return String(url)
+        .toLowerCase()
+        .includes('instagram.com');
     },
+
     formatMode: 'standard'
   },
+
 
   facebook: {
     name: 'Facebook',
     enabled: true,
+
     matches(url) {
       const u = String(url).toLowerCase();
 
@@ -59,12 +58,15 @@ const PROVIDERS = {
         u.includes('fb.watch')
       );
     },
+
     formatMode: 'standard'
   },
+
 
   twitter: {
     name: 'X / Twitter',
     enabled: true,
+
     matches(url) {
       const u = String(url).toLowerCase();
 
@@ -73,67 +75,63 @@ const PROVIDERS = {
         u.includes('x.com')
       );
     },
+
     formatMode: 'standard'
   },
+
 
   vimeo: {
     name: 'Vimeo',
     enabled: true,
+
     matches(url) {
-      return String(url).toLowerCase().includes('vimeo.com');
+      return String(url)
+        .toLowerCase()
+        .includes('vimeo.com');
     },
+
     formatMode: 'standard'
   },
+
 
   soundcloud: {
     name: 'SoundCloud',
     enabled: true,
+
     matches(url) {
-      return String(url).toLowerCase().includes('soundcloud.com');
+      return String(url)
+        .toLowerCase()
+        .includes('soundcloud.com');
     },
+
     formatMode: 'standard'
   },
 
-  /*
-   * =======================================================
-   * Threads Provider
-   * =======================================================
-   *
-   * 目前只接受 threads.com
-   *
-   * Threads 使用 yt-dlp-threads extractor plugin。
-   *
-   * plugin 沒有被寫死在下載流程裡。
-   * 只要 plugin 正常載入，yt-dlp 會自動使用 ThreadsIE。
-   *
-   * 未來如果 Threads plugin 壞掉，可以單獨停用：
-   *
-   * enabled: false
-   *
-   * 不會影響其他平台。
-   *
-   * =======================================================
-   */
+
+  /* =======================================================
+     Threads
+     ======================================================= */
 
   threads: {
     name: 'Threads',
     enabled: true,
 
     matches(url) {
-      return String(url)
-        .toLowerCase()
-        .includes('threads.com');
+      const u = String(url)
+        .toLowerCase();
+
+      return (
+        u.includes('threads.com')
+      );
     },
 
     formatMode: 'threads'
   },
 
-  /*
-   * TikTok
-   *
-   * 目前 LinkGrab 不處理 TikTok。
-   * TikTok 本身已經提供下載功能，因此保持停用。
-   */
+
+  /* =======================================================
+     TikTok
+     ======================================================= */
 
   tiktok: {
     name: 'TikTok',
@@ -148,6 +146,129 @@ const PROVIDERS = {
     formatMode: 'standard'
   }
 };
+
+
+/* =========================================================
+   Threads URL Normalizer
+   =========================================================
+
+   Threads 電腦版網址可能會出現：
+
+   https://www.threads.com/@user/post/ABC123
+   https://www.threads.com/@user/post/ABC123/media
+
+   或：
+
+   https://threads.com/@user/post/ABC123
+   https://threads.com/@user/post/ABC123/media/
+
+   yt-dlp-threads plugin 主要使用：
+
+   https://www.threads.com/@user/post/ABC123
+
+   因此只針對 Threads 的 /media 結尾進行整理。
+
+   不會影響：
+   - /post/ABC123
+   - /share/ABC123
+   - 其他平台網址
+
+   ========================================================= */
+
+function normalizeThreadsUrl(url) {
+  const original =
+    String(url || '').trim();
+
+  if (!original) {
+    return original;
+  }
+
+  try {
+    const parsed =
+      new URL(original);
+
+    const hostname =
+      parsed.hostname.toLowerCase();
+
+    /*
+     * 只處理 Threads
+     */
+    if (
+      hostname !== 'threads.com' &&
+      hostname !== 'www.threads.com'
+    ) {
+      return original;
+    }
+
+    /*
+     * 移除尾端 /
+     *
+     * 例如：
+     * /post/ABC123/
+     * →
+     * /post/ABC123
+     */
+    parsed.pathname =
+      parsed.pathname.replace(
+        /\/+$/,
+        ''
+      );
+
+    /*
+     * 如果是：
+     *
+     * /@user/post/ABC123/media
+     *
+     * 就轉成：
+     *
+     * /@user/post/ABC123
+     *
+     * 只處理「最後一段」media。
+     */
+    parsed.pathname =
+      parsed.pathname.replace(
+        /\/media$/i,
+        ''
+      );
+
+    /*
+     * 再次清除可能留下的 /
+     */
+    parsed.pathname =
+      parsed.pathname.replace(
+        /\/+$/,
+        ''
+      );
+
+    return parsed.toString();
+
+  } catch {
+    /*
+     * 如果不是正常 URL，
+     * 保留原網址，讓後面的驗證處理。
+     */
+    return original;
+  }
+}
+
+
+/* =========================================================
+   Normalize URL For Provider
+   ========================================================= */
+
+function normalizeUrl(url) {
+  const provider =
+    getProvider(url);
+
+  if (
+    provider &&
+    provider.id === 'threads'
+  ) {
+    return normalizeThreadsUrl(url);
+  }
+
+  return String(url || '').trim();
+}
 
 
 /* =========================================================
@@ -195,7 +316,8 @@ function run(
    ========================================================= */
 
 function isYouTube(url) {
-  const u = String(url).toLowerCase();
+  const u =
+    String(url).toLowerCase();
 
   return (
     u.includes('youtube.com') ||
@@ -205,7 +327,8 @@ function isYouTube(url) {
 
 
 function platformOf(url) {
-  const u = String(url).toLowerCase();
+  const u =
+    String(url).toLowerCase();
 
   if (isYouTube(u)) {
     return 'YouTube';
@@ -226,9 +349,13 @@ function platformOf(url) {
 
 
 function getProvider(url) {
-  const u = String(url).toLowerCase();
+  const u =
+    String(url).toLowerCase();
 
-  for (const [id, provider] of Object.entries(PROVIDERS)) {
+  for (
+    const [id, provider]
+    of Object.entries(PROVIDERS)
+  ) {
     try {
       if (provider.matches(u)) {
         return {
@@ -246,7 +373,8 @@ function getProvider(url) {
 
 
 function providerIsEnabled(url) {
-  const provider = getProvider(url);
+  const provider =
+    getProvider(url);
 
   return !!(
     provider &&
@@ -261,10 +389,17 @@ function providerIsEnabled(url) {
 
 function safeName(name) {
   return String(name || 'LinkGrab')
-    .replace(/[\\/:*?"<>|\x00-\x1F]/g, '_')
-    .replace(/\s+/g, ' ')
+    .replace(
+      /[\\/:*?"<>|\x00-\x1F]/g,
+      '_'
+    )
+    .replace(
+      /\s+/g,
+      ' '
+    )
     .trim()
-    .slice(0, 100) || 'LinkGrab';
+    .slice(0, 100) ||
+    'LinkGrab';
 }
 
 
@@ -273,18 +408,29 @@ function safeName(name) {
    ========================================================= */
 
 function findOutput(dir, ext) {
-  const entries = fs.readdirSync(dir, {
-    withFileTypes: true
-  });
+  const entries =
+    fs.readdirSync(
+      dir,
+      {
+        withFileTypes: true
+      }
+    );
 
   const found = [];
 
   for (const entry of entries) {
-    const filePath = path.join(dir, entry.name);
+    const filePath =
+      path.join(
+        dir,
+        entry.name
+      );
 
     if (entry.isDirectory()) {
       found.push(
-        ...findOutput(filePath, ext)
+        ...findOutput(
+          filePath,
+          ext
+        )
       );
 
       continue;
@@ -312,25 +458,31 @@ function findOutput(dir, ext) {
 
 async function getMediaStreams(file) {
   try {
-    const { stdout } = await run(
-      FFPROBE,
-      [
-        '-v',
-        'error',
-        '-show_entries',
-        'stream=index,codec_type,codec_name,profile,pix_fmt,width,height',
-        '-of',
-        'json',
-        file
-      ],
-      30 * 1000
-    );
+    const { stdout } =
+      await run(
+        FFPROBE,
+        [
+          '-v',
+          'error',
 
-    const data = JSON.parse(stdout);
+          '-show_entries',
+          'stream=index,codec_type,codec_name,profile,pix_fmt,width,height',
+
+          '-of',
+          'json',
+
+          file
+        ],
+        30 * 1000
+      );
+
+    const data =
+      JSON.parse(stdout);
 
     return Array.isArray(data.streams)
       ? data.streams
       : [];
+
   } catch {
     return [];
   }
@@ -343,11 +495,11 @@ async function mediaHasVideoAndAudio(file) {
 
   return (
     streams.some(
-      (stream) =>
+      stream =>
         stream.codec_type === 'video'
     ) &&
     streams.some(
-      (stream) =>
+      stream =>
         stream.codec_type === 'audio'
     )
   );
@@ -360,13 +512,13 @@ async function mediaIsCompatibleMp4(file) {
 
   const video =
     streams.find(
-      (stream) =>
+      stream =>
         stream.codec_type === 'video'
     );
 
   const audio =
     streams.find(
-      (stream) =>
+      stream =>
         stream.codec_type === 'audio'
     );
 
@@ -375,12 +527,14 @@ async function mediaIsCompatibleMp4(file) {
   }
 
   const videoCompatible =
-    String(video.codec_name || '')
-      .toLowerCase() === 'h264';
+    String(
+      video.codec_name || ''
+    ).toLowerCase() === 'h264';
 
   const audioCompatible =
-    String(audio.codec_name || '')
-      .toLowerCase() === 'aac';
+    String(
+      audio.codec_name || ''
+    ).toLowerCase() === 'aac';
 
   return (
     videoCompatible &&
@@ -458,13 +612,13 @@ async function validateMp4(file) {
 
   const video =
     streams.find(
-      (stream) =>
+      stream =>
         stream.codec_type === 'video'
     );
 
   const audio =
     streams.find(
-      (stream) =>
+      stream =>
         stream.codec_type === 'audio'
     );
 
@@ -661,7 +815,7 @@ app.post('/api/search', async (req, res) => {
       const results =
         (data.entries || [])
           .filter(Boolean)
-          .map((item) => ({
+          .map(item => ({
             id:
               item.id || '',
 
@@ -691,6 +845,7 @@ app.post('/api/search', async (req, res) => {
       return res.json({
         results
       });
+
     } catch (e) {
       return res.status(500).json({
         error:
@@ -711,31 +866,31 @@ app.post('/api/search', async (req, res) => {
    ========================================================= */
 
 app.post('/api/info', async (req, res) => {
-  const url =
+  const originalUrl =
     String(
       req.body?.url || ''
     ).trim();
 
-  if (!url) {
+  if (!originalUrl) {
     return res.status(400).json({
       error:
         '請輸入網址'
     });
   }
 
-  if (!/^https?:\/\//i.test(url)) {
+  if (!/^https?:\/\//i.test(originalUrl)) {
     return res.status(400).json({
       error:
         '請輸入有效的網址'
     });
   }
 
-  if (isYouTube(url)) {
+  if (isYouTube(originalUrl)) {
     return rejectYouTube(res);
   }
 
   const provider =
-    getProvider(url);
+    getProvider(originalUrl);
 
   if (!provider) {
     return res.status(400).json({
@@ -761,6 +916,22 @@ app.post('/api/info', async (req, res) => {
         '伺服器尚未準備 yt-dlp'
     });
   }
+
+  /*
+   * Threads：
+   *
+   * 自動處理：
+   *
+   * /post/ABC123
+   * /post/ABC123/media
+   *
+   * 最後交給 yt-dlp 的是：
+   *
+   * /post/ABC123
+   */
+
+  const url =
+    normalizeUrl(originalUrl);
 
   try {
     const { stdout } =
@@ -830,6 +1001,7 @@ app.post('/api/info', async (req, res) => {
       provider:
         provider.id
     });
+
   } catch (e) {
     res.status(500).json({
       error:
@@ -844,7 +1016,7 @@ app.post('/api/info', async (req, res) => {
    ========================================================= */
 
 app.post('/api/download', async (req, res) => {
-  const url =
+  const originalUrl =
     String(
       req.body?.url || ''
     ).trim();
@@ -860,26 +1032,26 @@ app.post('/api/download', async (req, res) => {
       'LinkGrab'
     );
 
-  if (!url) {
+  if (!originalUrl) {
     return res.status(400).json({
       error:
         '缺少網址'
     });
   }
 
-  if (!/^https?:\/\//i.test(url)) {
+  if (!/^https?:\/\//i.test(originalUrl)) {
     return res.status(400).json({
       error:
         '網址格式錯誤'
     });
   }
 
-  if (isYouTube(url)) {
+  if (isYouTube(originalUrl)) {
     return rejectYouTube(res);
   }
 
   const provider =
-    getProvider(url);
+    getProvider(originalUrl);
 
   if (!provider) {
     return res.status(400).json({
@@ -919,6 +1091,12 @@ app.post('/api/download', async (req, res) => {
         '伺服器尚未準備 FFprobe'
     });
   }
+
+  /*
+   * Threads URL 正規化
+   */
+  const url =
+    normalizeUrl(originalUrl);
 
   const jobId =
     `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
@@ -986,9 +1164,10 @@ app.post('/api/download', async (req, res) => {
     /*
      * Threads Provider
      *
-     * Threads plugin 主要提供 progressive/muxed MP4。
+     * Threads plugin 主要提供
+     * progressive / muxed MP4。
      *
-     * 不要求一定存在獨立 video/audio stream。
+     * 因此直接取得 MP4。
      */
 
     if (
@@ -998,6 +1177,7 @@ app.post('/api/download', async (req, res) => {
         '-f',
         'best[ext=mp4]/best'
       );
+
     } else {
       const height =
         quality === 'high'
@@ -1014,6 +1194,7 @@ app.post('/api/download', async (req, res) => {
         'mp4'
       );
     }
+
   } else {
     args.push(
       '-f',
@@ -1053,8 +1234,8 @@ app.post('/api/download', async (req, res) => {
 
 
     /*
-     * Threads plugin may return a progressive
-     * MP4 with a normal .mp4 extension.
+     * Threads plugin 可能直接產生
+     * 正常的 .mp4 檔案。
      */
 
     if (!outputs.length) {
